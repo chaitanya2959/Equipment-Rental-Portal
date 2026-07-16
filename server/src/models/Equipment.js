@@ -56,6 +56,15 @@ const equipmentSchema = new mongoose.Schema(
         image: {
             type: String,
             default: ""
+        },
+        averageRating: {
+            type: Number,
+            default: 0
+        },
+
+        totalReviews: {
+            type: Number,
+            default: 0
         }
     },
     {

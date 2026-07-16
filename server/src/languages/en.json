@@ -1,0 +1,17 @@
+{
+    "booking_created": "Booking Created Successfully",
+    "booking_cancelled": "Booking Cancelled Successfully",
+    "booking_approved": "Booking Approved Successfully",
+    "booking_rejected": "Booking Rejected Successfully",
+
+    "equipment_added": "Equipment Added Successfully",
+    "equipment_updated": "Equipment Updated Successfully",
+    "equipment_deleted": "Equipment Deleted Successfully",
+
+    "login_success": "Login Successfully",
+    "register_success": "Registration Successful",
+
+    "access_denied": "Access Denied",
+
+    "notification_created": "Notification Created Successfully"
+}

@@ -1,0 +1,17 @@
+{
+    "booking_created": "बुकिंग सफलतापूर्वक बनाई गई।",
+    "booking_cancelled": "बुकिंग सफलतापूर्वक रद्द की गई।",
+    "booking_approved": "बुकिंग स्वीकृत कर दी गई।",
+    "booking_rejected": "बुकिंग अस्वीकृत कर दी गई।",
+
+    "equipment_added": "उपकरण सफलतापूर्वक जोड़ा गया।",
+    "equipment_updated": "उपकरण सफलतापूर्वक अपडेट किया गया।",
+    "equipment_deleted": "उपकरण सफलतापूर्वक हटाया गया।",
+
+    "login_success": "लॉगिन सफल हुआ।",
+    "register_success": "पंजीकरण सफल हुआ।",
+
+    "access_denied": "प्रवेश अस्वीकृत।",
+
+    "notification_created": "सूचना सफलतापूर्वक बनाई गई।"
+}

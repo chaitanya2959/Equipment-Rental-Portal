@@ -1,5 +1,6 @@
 const Booking=require("../models/Booking");
 const Equipment=require("../models/Equipment");
+const Notification = require("../models/Notification");
 
 const createBooking = async (req, res) => {
 
@@ -31,6 +32,12 @@ const createBooking = async (req, res) => {
             totalAmount:
                 equipment.pricePerDay * req.body.totalDays
 
+        });
+        await Notification.create({
+            user: req.user.id,
+            title: "Booking Created",
+            message: "Your booking has been created successfully.",
+            type: "booking"
         });
 
         res.status(201).json({
