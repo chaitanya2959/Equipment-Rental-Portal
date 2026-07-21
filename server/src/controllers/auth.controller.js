@@ -103,7 +103,148 @@ const login = async (req, res) => {
     }
 };
 
+// Get Profile
+const getProfile = async (req, res) => {
+    try {
+
+        const user = await User.findById(req.user.id).select("-password");
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User Not Found"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: user
+        });
+
+    } catch (error) {
+
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+
+    }
+};
+// Update Profile
+const updateProfile = async (req, res) => {
+    try {
+
+        const { name, email, phone } = req.body;
+
+        const user = await User.findById(req.user.id);
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User Not Found"
+            });
+        }
+
+        // Check email already exists
+        if (email && email !== user.email) {
+
+            const existingUser = await User.findOne({ email });
+
+            if (existingUser) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Email already exists"
+                });
+            }
+
+            user.email = email;
+        }
+
+        user.name = name || user.name;
+        user.phone = phone || user.phone;
+
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Profile Updated Successfully",
+            data: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                phone: user.phone,
+                role: user.role
+            }
+        });
+
+    } catch (error) {
+
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+
+    }
+};
+// Change Password
+const changePassword = async (req, res) => {
+    try {
+
+        const { oldPassword, newPassword } = req.body;
+
+        const user = await User.findById(req.user.id);
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User Not Found"
+            });
+        }
+
+        // Check Old Password
+        const isMatch = await bcrypt.compare(
+            oldPassword,
+            user.password
+        );
+
+        if (!isMatch) {
+            return res.status(400).json({
+                success: false,
+                message: "Old Password is Incorrect"
+            });
+        }
+
+        // Prevent same password
+        if (oldPassword === newPassword) {
+            return res.status(400).json({
+                success: false,
+                message: "New Password must be different"
+            });
+        }
+
+        // Hash New Password
+        user.password = await bcrypt.hash(newPassword, 10);
+
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Password Changed Successfully"
+        });
+
+    } catch (error) {
+
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+
+    }
+};
 module.exports = {
     register,
-    login
+    login,
+    getProfile,
+    updateProfile,
+    changePassword
 };

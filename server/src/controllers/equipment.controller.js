@@ -26,10 +26,14 @@ const getAllEquipment = async (req, res) => {
 const addEquipment = async (req, res) => {
     try {
 
+        const images = req.files
+            ? req.files.map(file => file.filename)
+            : [];
+
         const equipment = await Equipment.create({
             ...req.body,
             owner: req.user.id,
-            image: req.file ? req.file.filename : ""
+            images
         });
 
         res.status(201).json({
@@ -110,7 +114,13 @@ const updateEquipment = async (req, res) => {
                 message: "Access Denied"
             });
         }
+        const updateData = {
+            ...req.body
+        };
 
+        if (req.files && req.files.length > 0) {
+            updateData.images = req.files.map(file => file.filename);
+        }
         const updatedEquipment = await Equipment.findByIdAndUpdate(
             req.params.id,
             req.body,

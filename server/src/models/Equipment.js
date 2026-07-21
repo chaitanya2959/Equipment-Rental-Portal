@@ -27,6 +27,17 @@ const equipmentSchema = new mongoose.Schema(
             type: String,
             required: true
         },
+        modelNumber: {
+            type: String,
+            trim: true,
+            default: ""
+        },
+
+        condition: {
+            type: String,
+            enum: ["New", "Excellent", "Good", "Fair", "Poor"],
+            default: "Good"
+        },
 
         pricePerDay: {
             type: Number,
@@ -35,28 +46,38 @@ const equipmentSchema = new mongoose.Schema(
 
         deposit: {
             type: Number,
-            required: true
+            required: true,
+            default: 0,
+            min: 0
         },
 
         quantity: {
             type: Number,
-            default: 1
+            required: true,
+            default: 1,
+            min: 1
         },
 
         available: {
             type: Boolean,
             default: true
         },
-
+        status: {
+            type: String,
+            enum: ["Available", "Rented", "Maintenance", "Unavailable"],
+            default: "Available"
+        },
         location: {
             type: String,
             required: true
         },
 
-        image: {
-            type: String,
-            default: ""
-        },
+        images:[
+        {
+            type: String
+        }
+        ],
+
         averageRating: {
             type: Number,
             default: 0

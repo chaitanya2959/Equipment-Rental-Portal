@@ -14,6 +14,12 @@ const paymentSchema = new mongoose.Schema(
         required: true
     },
 
+    owner: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true
+    },
+
     amount: {
         type: Number,
         required: true
@@ -21,13 +27,13 @@ const paymentSchema = new mongoose.Schema(
 
     paymentMethod: {
         type: String,
-        enum: ["UPI", "Card", "NetBanking", "Cash"],
-        default: "UPI"
+        enum: ["Cash", "Online"],
+        required: true
     },
 
     paymentStatus: {
         type: String,
-        enum: ["Pending", "Success", "Failed", "Refunded"],
+        enum: ["Pending", "Paid", "Failed", "Refunded"],
         default: "Pending"
     },
 

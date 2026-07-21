@@ -7,13 +7,29 @@ const bookingSchema = new mongoose.Schema(
         ref:"User",
         required:true
     },
+    owner: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true
+    },
 
     equipment:{
         type:mongoose.Schema.Types.ObjectId,
         ref:"Equipment",
         required:true
     },
-
+    bookingNumber: {
+        type: String,
+        unique: true
+    },
+    depositReturned: {
+        type: Boolean,
+        default: false
+    },
+    pricePerDay: {
+        type: Number,
+        required: true
+    },
     startDate:{
         type:Date,
         required:true
@@ -28,6 +44,9 @@ const bookingSchema = new mongoose.Schema(
         type:Number,
         required:true
     },
+    returnedAt: {
+        type: Date
+    },
 
     totalAmount:{
         type:Number,
@@ -36,13 +55,41 @@ const bookingSchema = new mongoose.Schema(
 
     status:{
         type:String,
-        enum:[
-            "Pending",
-            "Approved",
-            "Rejected",
-            "Completed"
+       enum: [
+          "Pending",
+          "Approved",
+          "PickedUp",
+          "Completed",
+          "Rejected",
+          "Cancelled"
         ],
         default:"Pending"
+    },
+    paymentMethod: {
+        type: String,
+        enum: ["Cash", "Online"],
+        default: "Cash"
+    },
+
+    paymentStatus: {
+        type: String,
+        enum: ["Pending", "Paid", "Failed", "Refunded"],
+        default: "Pending"
+    },
+
+    depositAmount: {
+        type: Number,
+        default: 0
+    },
+    pickupDate: {
+        type: Date
+    },  
+    returnDate: {
+        type: Date
+    },  
+    remarks: {
+        type: String,
+        default: ""
     }
 
 },

@@ -1,17 +1,17 @@
 const Wishlist = require("../models/Wishlist");
 
-// Add Wishlist
-const addWishlist = async (req, res) => {
+// Add to Wishlist
+const addToWishlist = async (req, res) => {
     try {
 
         const { equipment } = req.body;
 
-        const exists = await Wishlist.findOne({
+        const existingWishlist = await Wishlist.findOne({
             customer: req.user.id,
             equipment
         });
 
-        if (exists) {
+        if (existingWishlist) {
             return res.status(400).json({
                 success: false,
                 message: "Equipment already in wishlist"
@@ -25,7 +25,7 @@ const addWishlist = async (req, res) => {
 
         res.status(201).json({
             success: true,
-            message: "Added to Wishlist",
+            message: "Added to Wishlist Successfully",
             data: wishlist
         });
 
@@ -39,8 +39,8 @@ const addWishlist = async (req, res) => {
     }
 };
 
-// Get Wishlist
-const getWishlist = async (req, res) => {
+// Get My Wishlist
+const getMyWishlist = async (req, res) => {
     try {
 
         const wishlist = await Wishlist.find({
@@ -63,15 +63,31 @@ const getWishlist = async (req, res) => {
     }
 };
 
-// Remove Wishlist
+// Remove from Wishlist
 const removeWishlist = async (req, res) => {
     try {
+
+        const wishlist = await Wishlist.findById(req.params.id);
+
+        if (!wishlist) {
+            return res.status(404).json({
+                success: false,
+                message: "Wishlist Item Not Found"
+            });
+        }
+
+        if (wishlist.customer.toString() !== req.user.id) {
+            return res.status(403).json({
+                success: false,
+                message: "Access Denied"
+            });
+        }
 
         await Wishlist.findByIdAndDelete(req.params.id);
 
         res.status(200).json({
             success: true,
-            message: "Removed From Wishlist"
+            message: "Removed from Wishlist Successfully"
         });
 
     } catch (error) {
@@ -85,7 +101,7 @@ const removeWishlist = async (req, res) => {
 };
 
 module.exports = {
-    addWishlist,
-    getWishlist,
+    addToWishlist,
+    getMyWishlist,
     removeWishlist
 };

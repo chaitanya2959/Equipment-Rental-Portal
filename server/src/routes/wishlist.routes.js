@@ -4,14 +4,14 @@ const router = express.Router();
 const protect = require("../middleware/auth");
 
 const {
-    addWishlist,
-    getWishlist,
+    addToWishlist,
+    getMyWishlist,
     removeWishlist
 } = require("../controllers/wishlist.controller");
 
-router.post("/", protect, addWishlist);
+router.post("/", protect, addToWishlist);
 
-router.get("/", protect, getWishlist);
+router.get("/", protect, getMyWishlist);
 
 router.delete("/:id", protect, removeWishlist);
 

@@ -3,36 +3,39 @@ const { body } = require("express-validator");
 const registerValidation = [
 
     body("name")
+        .trim()
         .notEmpty()
         .withMessage("Name is required"),
 
     body("email")
+        .trim()
         .isEmail()
-        .withMessage("Invalid Email"),
+        .withMessage("Invalid email address"),
 
     body("password")
         .isLength({ min: 6 })
         .withMessage("Password must be at least 6 characters"),
 
     body("phone")
-        .isLength({ min: 10, max: 10 })
-        .withMessage("Phone must be 10 digits"),
+        .isMobilePhone("en-IN")
+        .withMessage("Invalid mobile number"),
 
     body("role")
         .isIn(["customer", "owner", "admin"])
-        .withMessage("Invalid Role")
+        .withMessage("Invalid role")
 
 ];
 
 const loginValidation = [
 
     body("email")
+        .trim()
         .isEmail()
-        .withMessage("Invalid Email"),
+        .withMessage("Invalid email"),
 
     body("password")
         .notEmpty()
-        .withMessage("Password Required")
+        .withMessage("Password is required")
 
 ];
 
