@@ -114,16 +114,24 @@ const updateEquipment = async (req, res) => {
                 message: "Access Denied"
             });
         }
-        const updateData = {
-            ...req.body
-        };
 
+        let updateData = { ...req.body };
+
+        // Handle images: if new files uploaded, replace images
         if (req.files && req.files.length > 0) {
             updateData.images = req.files.map(file => file.filename);
+        } else if (req.body.keepImages === "true") {
+            // Keep existing images when no new files uploaded
+            updateData.images = equipment.images || [];
         }
+
+        // Handle boolean conversion for available
+        if (req.body.available === "true") updateData.available = true;
+        if (req.body.available === "false") updateData.available = false;
+
         const updatedEquipment = await Equipment.findByIdAndUpdate(
             req.params.id,
-            req.body,
+            updateData,
             {
                 new: true,
                 runValidators: true

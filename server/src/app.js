@@ -9,6 +9,7 @@ const reviewRoutes = require("./routes/review.routes");
 const wishlistRoutes = require("./routes/wishlist.routes");
 const dashboardRoutes = require("./routes/dashboard.routes");
 const adminRoutes=require("./routes/admin.routes");
+const categoryRoutes=require("./routes/category.routes");
 
 
 
@@ -25,6 +26,7 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/wishlist", wishlistRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/admin",adminRoutes);
+app.use("/api/categories", categoryRoutes);
 app.get("/", (req, res) => {
     res.json({
         message: "Equipment Rental Portal API"

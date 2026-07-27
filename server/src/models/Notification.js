@@ -20,13 +20,33 @@ const notificationSchema = new mongoose.Schema(
 
     type: {
       type: String,
-      enum: ["booking", "equipment", "payment", "system"],
+      enum: ["booking", "equipment", "payment", "review", "system"],
       default: "system",
     },
 
     isRead: {
       type: Boolean,
       default: false,
+    },
+
+    bookingId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Booking",
+    },
+
+    customerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+
+    equipmentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Equipment",
+    },
+
+    ownerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
     },
   },
   {

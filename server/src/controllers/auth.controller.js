@@ -134,7 +134,7 @@ const getProfile = async (req, res) => {
 const updateProfile = async (req, res) => {
     try {
 
-        const { name, email, phone } = req.body;
+        const { name, email, phone, address, city, state, pincode, bankName, accountNumber, ifscCode, upiId, businessName, gstNumber } = req.body;
 
         const user = await User.findById(req.user.id);
 
@@ -162,19 +162,36 @@ const updateProfile = async (req, res) => {
 
         user.name = name || user.name;
         user.phone = phone || user.phone;
+        user.address = address || user.address;
+        user.city = city || user.city;
+        user.state = state || user.state;
+        user.pincode = pincode || user.pincode;
+        user.bankName = bankName || user.bankName;
+        user.accountNumber = accountNumber || user.accountNumber;
+        user.ifscCode = ifscCode || user.ifscCode;
+        user.upiId = upiId || user.upiId;
+        user.gstNumber = gstNumber || user.gstNumber;
+        user.businessName = businessName || user.businessName || user.name;
+
+        if (req.files?.profileImage?.[0]) {
+            user.profileImage = req.files.profileImage[0].filename;
+        }
+
+        if (req.files?.businessLogo?.[0]) {
+            user.businessLogo = req.files.businessLogo[0].filename;
+        }
+
+        if (req.files?.documents?.length) {
+            const uploadedDocs = req.files.documents.map((file) => file.filename);
+            user.documents = Array.from(new Set([...(user.documents || []), ...uploadedDocs]));
+        }
 
         await user.save();
 
         res.status(200).json({
             success: true,
             message: "Profile Updated Successfully",
-            data: {
-                id: user._id,
-                name: user.name,
-                email: user.email,
-                phone: user.phone,
-                role: user.role
-            }
+            data: user
         });
 
     } catch (error) {

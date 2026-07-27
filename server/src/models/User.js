@@ -41,6 +41,16 @@ const userSchema = new mongoose.Schema(
         default: ""
     },
 
+    businessName: {
+        type: String,
+        default: ""
+    },
+
+    businessLogo: {
+        type: String,
+        default: ""
+    },
+
     address: {
        type: String,
        default: ""
@@ -78,6 +88,16 @@ const userSchema = new mongoose.Schema(
     ifscCode: {
         type: String,
         default: ""
+    },
+
+    gstNumber: {
+        type: String,
+        default: ""
+    },
+
+    documents: {
+        type: [String],
+        default: []
     }
 
 },

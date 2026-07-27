@@ -1,0 +1,245 @@
+.customer-equipment-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.equipment-hero,
+.equipment-filters,
+.equipment-empty,
+.equipment-card {
+  border-radius: 1.25rem;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, .06);
+}
+
+.equipment-hero {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.equipment-hero-stats {
+  display: grid;
+  gap: .85rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.equipment-hero-stat {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  display: flex;
+  gap: .8rem;
+  padding: 1rem;
+}
+
+.equipment-hero-stat svg {
+  color: #2563eb;
+  font-size: 1.1rem;
+}
+
+.equipment-hero-stat strong {
+  color: #111827;
+  display: block;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.equipment-hero-stat span {
+  color: #6b7280;
+  font-size: .82rem;
+}
+
+.equipment-input .input-group-text {
+  background: #fff;
+  border-right: 0;
+  color: #94a3b8;
+  padding-left: 1rem;
+}
+
+.equipment-input .form-control {
+  border-left: 0;
+  min-height: 3.25rem;
+}
+
+.equipment-select,
+.equipment-input .form-control {
+  border-color: #dbe3ee;
+  border-radius: 1rem;
+}
+
+.equipment-select {
+  min-height: 3.25rem;
+}
+
+.equipment-range-label {
+  color: #6b7280;
+  font-size: .85rem;
+  margin-top: .35rem;
+}
+
+.equipment-result-count {
+  align-items: center;
+  color: #334155;
+  display: inline-flex;
+  gap: .55rem;
+  font-weight: 600;
+}
+
+.equipment-card {
+  border: 1px solid #e5e7eb;
+  transition: transform .3s ease, box-shadow .3s ease;
+}
+
+.equipment-card:hover {
+  box-shadow: 0 24px 50px rgba(15, 23, 42, .1);
+  transform: translateY(-4px);
+}
+
+.equipment-image-wrap {
+  overflow: hidden;
+  position: relative;
+}
+
+.equipment-image {
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  transition: transform .4s ease;
+  width: 100%;
+}
+
+.equipment-card:hover .equipment-image {
+  transform: scale(1.04);
+}
+
+.equipment-status {
+  left: 1rem;
+  position: absolute;
+  top: 1rem;
+}
+
+.equipment-wishlist-button {
+  align-items: center;
+  background: rgba(255, 255, 255, .95);
+  border: 0;
+  border-radius: 999px;
+  color: #ef4444;
+  display: inline-flex;
+  height: 2.4rem;
+  justify-content: center;
+  position: absolute;
+  right: 1rem;
+  top: 1rem;
+  transition: transform .3s ease, box-shadow .3s ease;
+  width: 2.4rem;
+}
+
+.equipment-wishlist-button:hover {
+  box-shadow: 0 10px 24px rgba(15, 23, 42, .12);
+  transform: scale(1.05);
+}
+
+.equipment-meta {
+  color: #2563eb;
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.equipment-title {
+  color: #111827;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -.02em;
+}
+
+.equipment-location {
+  align-items: center;
+  color: #6b7280;
+  display: inline-flex;
+  gap: .35rem;
+  font-size: .88rem;
+}
+
+.equipment-location svg {
+  color: #2563eb;
+}
+
+.equipment-price {
+  background: #eff6ff;
+  border-radius: 999px;
+  color: #2563eb;
+  font-size: .85rem;
+  font-weight: 800;
+  padding: .4rem .7rem;
+  white-space: nowrap;
+}
+
+.equipment-rating {
+  align-items: center;
+  color: #f59e0b;
+  display: flex;
+  gap: .35rem;
+}
+
+.equipment-rating small {
+  color: #6b7280;
+  margin-left: .2rem;
+}
+
+.equipment-deposit {
+  align-items: baseline;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  display: flex;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: .85rem 1rem;
+}
+
+.equipment-deposit span {
+  color: #6b7280;
+  font-size: .84rem;
+}
+
+.equipment-deposit strong {
+  color: #111827;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.equipment-card .btn {
+  align-items: center;
+  display: inline-flex;
+  gap: .5rem;
+  justify-content: center;
+}
+
+.equipment-empty-icon {
+  color: #94a3b8;
+  font-size: 2.25rem;
+  margin-bottom: .75rem;
+}
+
+.equipment-pagination-wrap .pagination {
+  --bs-pagination-border-color: #e5e7eb;
+  --bs-pagination-color: #334155;
+  --bs-pagination-hover-bg: #eff6ff;
+  --bs-pagination-hover-border-color: #bfdbfe;
+  --bs-pagination-active-bg: #2563eb;
+  --bs-pagination-active-border-color: #2563eb;
+  gap: .35rem;
+}
+
+.equipment-pagination-wrap .page-link {
+  border-radius: .9rem;
+  box-shadow: none;
+  min-width: 2.95rem;
+  text-align: center;
+}
+
+@media (max-width: 991.98px) {
+  .equipment-hero-stats {
+    grid-template-columns: 1fr;
+  }
+}

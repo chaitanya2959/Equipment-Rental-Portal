@@ -1,0 +1,138 @@
+.customer-equipment-details {
+  display: grid;
+}
+
+.equipment-detail-card,
+.equipment-booking-card {
+  border-radius: 1.25rem;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, .06);
+}
+
+.equipment-detail-image-wrap {
+  position: relative;
+}
+
+.equipment-detail-image {
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  width: 100%;
+}
+
+.equipment-detail-badge {
+  left: 1rem;
+  position: absolute;
+  top: 1rem;
+}
+
+.equipment-detail-meta {
+  align-items: center;
+  color: #6b7280;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.equipment-detail-meta span {
+  align-items: center;
+  display: inline-flex;
+  gap: .4rem;
+}
+
+.equipment-detail-meta svg {
+  color: #2563eb;
+}
+
+.equipment-detail-points {
+  display: grid;
+  gap: .85rem;
+}
+
+.equipment-point {
+  align-items: flex-start;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  display: flex;
+  gap: .8rem;
+  padding: 1rem;
+}
+
+.equipment-point svg {
+  color: #2563eb;
+  font-size: 1.05rem;
+  margin-top: .1rem;
+}
+
+.equipment-point strong {
+  display: block;
+  color: #111827;
+  font-size: .96rem;
+}
+
+.equipment-point span {
+  color: #6b7280;
+  font-size: .86rem;
+}
+
+.equipment-booking-card {
+  top: 6rem;
+}
+
+.equipment-booking-label {
+  color: #6b7280;
+  font-size: .82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.equipment-booking-price {
+  color: #111827;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -.04em;
+}
+
+.equipment-booking-summary {
+  display: grid;
+  gap: .8rem;
+}
+
+.equipment-booking-summary div {
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  display: flex;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: .9rem 1rem;
+}
+
+.equipment-booking-summary span {
+  color: #6b7280;
+  font-size: .84rem;
+}
+
+.equipment-booking-summary strong {
+  color: #111827;
+  display: inline-flex;
+  gap: .35rem;
+  font-size: .92rem;
+  font-weight: 800;
+}
+
+.equipment-booking-note {
+  align-items: center;
+  background: #eff6ff;
+  border-radius: 1rem;
+  color: #2563eb;
+  display: inline-flex;
+  gap: .55rem;
+  padding: .85rem 1rem;
+}
+
+@media (max-width: 1199.98px) {
+  .equipment-booking-card {
+    position: static;
+  }
+}
