@@ -47,7 +47,6 @@ function OwnerLayout() {
         collapsed={sidebarCollapsed}
         isOpen={sidebarOpen}
         isMobile={isMobile}
-        onToggleCollapse={handleToggleSidebar}
         onCloseMobile={() => setSidebarOpen(false)}
       />
       <div className="owner-main">

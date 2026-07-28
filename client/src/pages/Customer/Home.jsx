@@ -117,12 +117,6 @@ function Home() {
       .slice(0, 4);
   }, [equipments]);
 
-  const topRatedEquipments = useMemo(() => {
-    return [...equipments]
-      .sort((a, b) => (b.averageRating ?? b.rating ?? 0) - (a.averageRating ?? a.rating ?? 0))
-      .slice(0, 4);
-  }, [equipments]);
-
   const popularCategories = useMemo(() => {
     const categoryCounts = equipments.reduce((acc, equipment) => {
       if (!equipment.category) return acc;
@@ -147,6 +141,28 @@ function Home() {
       .filter((booking) => booking.status === "PickedUp" && booking.returnDate && new Date(booking.returnDate) >= today)
       .sort((a, b) => new Date(a.returnDate) - new Date(b.returnDate))
       .slice(0, 4);
+  }, [bookings]);
+
+  const pickupReminders = useMemo(() => {
+    const now = new Date();
+    return bookings.filter((booking) => {
+      if (booking.status !== "Approved" || !booking.startDate) return false;
+      const start = new Date(booking.startDate);
+      if (Number.isNaN(start.getTime())) return false;
+      const hoursRemaining = (start - now) / (1000 * 60 * 60);
+      return hoursRemaining >= 0 && hoursRemaining <= 24;
+    });
+  }, [bookings]);
+
+  const returnReminders = useMemo(() => {
+    const now = new Date();
+    return bookings.filter((booking) => {
+      if (booking.status !== "PickedUp" || !booking.endDate) return false;
+      const end = new Date(booking.endDate);
+      if (Number.isNaN(end.getTime())) return false;
+      const diffDays = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
+      return diffDays === 1;
+    });
   }, [bookings]);
 
   const latestNotifications = useMemo(() => notifications.slice(0, 5), [notifications]);
@@ -236,6 +252,27 @@ function Home() {
 
           {error ? (
             <div className="alert alert-danger mt-4">{error}</div>
+          ) : null}
+
+          {pickupReminders.length > 0 || returnReminders.length > 0 ? (
+            <div className="row g-3 mt-4">
+              {pickupReminders.length > 0 ? (
+                <div className="col-12 col-lg-6">
+                  <div className="public-reminder">
+                    <strong>Pickup reminder</strong>
+                    <div className="small mt-1">Your equipment pickup is within 24 hours.</div>
+                  </div>
+                </div>
+              ) : null}
+              {returnReminders.length > 0 ? (
+                <div className="col-12 col-lg-6">
+                  <div className="public-reminder">
+                    <strong>Return reminder</strong>
+                    <div className="small mt-1">Please return equipment tomorrow.</div>
+                  </div>
+                </div>
+              ) : null}
+            </div>
           ) : null}
 
           <div className="row g-3 mt-4">

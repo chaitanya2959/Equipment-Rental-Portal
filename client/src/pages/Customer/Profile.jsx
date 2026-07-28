@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import BackButton from "../../components/Common/BackButton";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../services/api";
 import { FaCamera, FaEnvelope, FaLocationDot, FaLock, FaPhone, FaUser } from "react-icons/fa6";
@@ -179,15 +180,18 @@ function Profile() {
   };
 
   return (
-    <div className="container-fluid px-0">
+    <div className="container-xxl py-4">
       {toast ? <div className="alert alert-success">{toast}</div> : null}
       {error ? <div className="alert alert-danger">{error}</div> : null}
 
       <div className="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
-        <div>
+        <div className="d-flex align-items-center gap-3">
+          <BackButton label="Back" />
+          <div>
           <p className="text-uppercase small fw-semibold text-primary mb-2">Customer workspace</p>
           <h2 className="fw-bold mb-1">Profile</h2>
           <p className="text-muted mb-0">Manage your account details, contact information, and security settings.</p>
+          </div>
         </div>
       </div>
 

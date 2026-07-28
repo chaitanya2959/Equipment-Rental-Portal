@@ -5,9 +5,8 @@ import {
   FaBoxOpen,
   FaCalendarCheck,
   FaCirclePlus,
-  FaChevronLeft,
-  FaChevronRight,
   FaClockRotateLeft,
+  FaComments,
   FaGaugeHigh,
   FaGear,
   FaIndianRupeeSign,
@@ -27,12 +26,13 @@ const menuItems = [
   ["Earnings", "/owner/earnings", FaIndianRupeeSign],
   ["Payments", "/owner/payments", FaIndianRupeeSign],
   ["Reviews", "/owner/reviews", FaStar],
+  ["Chat", "/owner/chat", FaComments],
   ["Notifications", "/owner/notifications", FaBell],
   ["Profile", "/owner/profile", FaUser],
   ["Settings", "/owner/settings", FaGear],
 ];
 
-function Sidebar({ collapsed, isOpen, isMobile, onToggleCollapse, onCloseMobile }) {
+function Sidebar({ collapsed, isOpen, isMobile, onCloseMobile }) {
   const { logout } = useAuth();
 
   const handleNavClick = () => {
@@ -58,15 +58,6 @@ function Sidebar({ collapsed, isOpen, isMobile, onToggleCollapse, onCloseMobile 
               <small>Equipment Rental Portal</small>
             </span>
           </NavLink>
-
-          <button
-            className="owner-sidebar-toggle btn btn-sm btn-light"
-            type="button"
-            onClick={onToggleCollapse}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {collapsed ? <FaChevronRight /> : <FaChevronLeft />}
-          </button>
         </div>
 
         <nav className="owner-nav" aria-label="Owner navigation">

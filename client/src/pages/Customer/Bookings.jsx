@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import BackButton from "../../components/Common/BackButton";
 import {
   FaCalendarDays,
   FaChevronLeft,
@@ -6,10 +7,7 @@ import {
   FaCircleXmark,
   FaEye,
   FaMagnifyingGlass,
-  FaMapLocationDot,
-  FaMoneyBillWave,
   FaRegClock,
-  FaTruckRampBox,
 } from "react-icons/fa6";
 import { cancelBooking, getMyBookings } from "../../services/bookingService";
 
@@ -52,6 +50,59 @@ const formatCurrency = (value) =>
     maximumFractionDigits: 0,
   }).format(Number(value || 0));
 
+const getDaysDiff = (from, to) => {
+  const start = new Date(from);
+  const end = new Date(to);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
+  return Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+};
+
+const getRentalState = (booking) => {
+  const startDate = booking.startDate ? new Date(booking.startDate) : null;
+  const endDate = booking.endDate ? new Date(booking.endDate) : null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (booking.status === "Completed") {
+    return { label: "Completed", tone: "success", detail: "Rental closed" };
+  }
+
+  if (["Cancelled", "Rejected"].includes(booking.status)) {
+    return { label: booking.status, tone: "secondary", detail: "No longer active" };
+  }
+
+  if (!startDate || !endDate) {
+    return { label: booking.status || "Pending", tone: "primary", detail: "Awaiting schedule" };
+  }
+
+  const pickupDiff = getDaysDiff(today, startDate);
+  const returnDiff = getDaysDiff(today, endDate);
+
+  if (startDate > today) {
+    const hoursRemaining = Math.ceil((startDate - new Date()) / (1000 * 60 * 60));
+    if (hoursRemaining <= 24) {
+      return { label: "Pickup within 24h", tone: "warning", detail: `${hoursRemaining} hour${hoursRemaining === 1 ? "" : "s"} left` };
+    }
+    return { label: "Upcoming", tone: "info", detail: `Pickup in ${pickupDiff} day${pickupDiff === 1 ? "" : "s"}` };
+  }
+
+  if (booking.status === "PickedUp" || booking.status === "Approved") {
+    if (returnDiff < 0) {
+      return { label: "Overdue", tone: "danger", detail: `${Math.abs(returnDiff)} day${Math.abs(returnDiff) === 1 ? "" : "s"} overdue` };
+    }
+    if (returnDiff === 0) {
+      return { label: "Due today", tone: "warning", detail: "Return today" };
+    }
+    return { label: "Active", tone: "success", detail: `${returnDiff} day${returnDiff === 1 ? "" : "s"} remaining` };
+  }
+
+  if (returnDiff < 0) {
+    return { label: "Overdue", tone: "danger", detail: `${Math.abs(returnDiff)} day${Math.abs(returnDiff) === 1 ? "" : "s"} overdue` };
+  }
+
+  return { label: booking.status || "Pending", tone: "info", detail: "In progress" };
+};
+
 const getImageUrl = (equipment) => {
   const image = equipment?.images?.[0];
   if (!image) return placeholderImage;
@@ -60,6 +111,7 @@ const getImageUrl = (equipment) => {
 };
 
 function BookingCard({ booking, onView, onCancel, cancelling }) {
+  const rentalState = getRentalState(booking);
   return (
     <div className="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
       <img
@@ -106,6 +158,12 @@ function BookingCard({ booking, onView, onCancel, cancelling }) {
               <div className="fw-semibold">{formatDate(booking.endDate)}</div>
             </div>
           </div>
+        </div>
+
+        <div className="border rounded-3 p-2 mb-3 bg-light">
+          <div className="text-muted small">Rental state</div>
+          <div className="fw-semibold text-capitalize">{rentalState.label}</div>
+          <div className="text-muted small">{rentalState.detail}</div>
         </div>
 
         <div className="row g-2 small mb-3">
@@ -163,14 +221,6 @@ function Bookings() {
   const [toast, setToast] = useState("");
 
   useEffect(() => {
-    fetchBookings();
-  }, []);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, sortBy]);
-
-  useEffect(() => {
     if (!toast) return undefined;
     const timer = setTimeout(() => setToast(""), 2500);
     return () => clearTimeout(timer);
@@ -188,6 +238,30 @@ function Bookings() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    let active = true;
+
+    const loadBookings = async () => {
+      try {
+        setLoading(true);
+        setError("");
+        const data = await getMyBookings();
+        if (!active) return;
+        setBookings(data);
+      } catch (fetchError) {
+        if (!active) return;
+        setError(fetchError?.response?.data?.message || "Unable to load your bookings.");
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    loadBookings();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const filteredBookings = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -213,20 +287,15 @@ function Bookings() {
       return sortBy === "oldest" ? dateA - dateB : dateB - dateA;
     });
 
-    return items;
+    return items.map((booking) => ({ ...booking, rentalState: getRentalState(booking) }));
   }, [bookings, search, sortBy]);
 
   const totalPages = Math.max(1, Math.ceil(filteredBookings.length / PAGE_SIZE));
+  const currentPageSafe = Math.min(currentPage, totalPages);
   const paginatedBookings = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
+    const start = (currentPageSafe - 1) * PAGE_SIZE;
     return filteredBookings.slice(start, start + PAGE_SIZE);
-  }, [filteredBookings, currentPage]);
-
-  useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
-    }
-  }, [currentPage, totalPages]);
+  }, [filteredBookings, currentPageSafe]);
 
   const handleCancel = async (booking) => {
     const confirmed = window.confirm(`Cancel booking ${booking.bookingNumber || booking._id}?`);
@@ -260,17 +329,38 @@ function Bookings() {
     ];
   }, [bookings]);
 
-  const selectedImage = selectedBooking ? getImageUrl(selectedBooking.equipment) : placeholderImage;
+  const pickupReminders = useMemo(
+    () =>
+      bookings.filter((booking) => {
+        if (booking.status !== "Approved") return false;
+        const diff = getDaysDiff(new Date(), booking.startDate);
+        return diff !== null && diff <= 1 && diff >= 0;
+      }),
+    [bookings],
+  );
+
+  const returnReminders = useMemo(
+    () =>
+      bookings.filter((booking) => {
+        if (booking.status !== "PickedUp") return false;
+        const diff = getDaysDiff(new Date(), booking.endDate);
+        return diff === 1;
+      }),
+    [bookings],
+  );
 
   return (
-    <div className="container-fluid px-0">
+    <div className="container-xxl py-4">
       {toast ? <div className="alert alert-success">{toast}</div> : null}
 
       <div className="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
-        <div>
+        <div className="d-flex align-items-center gap-3">
+          <BackButton label="Back" />
+          <div>
           <p className="text-uppercase small fw-semibold text-primary mb-2">Customer workspace</p>
           <h2 className="fw-bold mb-1">My Bookings</h2>
           <p className="text-muted mb-0">Track every booking, search live records, and cancel any eligible rental.</p>
+          </div>
         </div>
         <div className="d-flex flex-wrap gap-2">
           <span className="badge bg-primary-subtle text-primary px-3 py-2">{bookings.length} total</span>
@@ -280,6 +370,25 @@ function Bookings() {
           </span>
         </div>
       </div>
+
+      {pickupReminders.length > 0 || returnReminders.length > 0 ? (
+        <div className="row g-3 mb-4">
+          {pickupReminders.length > 0 ? (
+            <div className="col-12 col-lg-6">
+              <div className="alert alert-warning rounded-4 mb-0">
+                {pickupReminders.length} pickup reminder{pickupReminders.length === 1 ? "" : "s"} within 24 hours.
+              </div>
+            </div>
+          ) : null}
+          {returnReminders.length > 0 ? (
+            <div className="col-12 col-lg-6">
+              <div className="alert alert-info rounded-4 mb-0">
+                {returnReminders.length} return reminder{returnReminders.length === 1 ? "" : "s"} due tomorrow.
+              </div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="card border-0 shadow-sm rounded-4 mb-4">
         <div className="card-body p-4">
@@ -292,13 +401,23 @@ function Bookings() {
                   className="form-control ps-5"
                   placeholder="Search booking number, equipment, brand, location"
                   value={search}
-                  onChange={(event) => setSearch(event.target.value)}
+                  onChange={(event) => {
+                    setSearch(event.target.value);
+                    setCurrentPage(1);
+                  }}
                 />
               </div>
             </div>
             <div className="col-12 col-md-6 col-lg-3">
               <label className="form-label fw-semibold">Sort by</label>
-              <select className="form-select" value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
+              <select
+                className="form-select"
+                value={sortBy}
+                onChange={(event) => {
+                  setSortBy(event.target.value);
+                  setCurrentPage(1);
+                }}
+              >
                 <option value="latest">Latest First</option>
                 <option value="oldest">Oldest First</option>
               </select>
@@ -352,6 +471,7 @@ function Bookings() {
                     <th>Equipment</th>
                     <th>Location</th>
                     <th>Dates</th>
+                    <th>Countdown</th>
                     <th>Days</th>
                     <th>Amount</th>
                     <th>Status</th>
@@ -375,6 +495,12 @@ function Bookings() {
                       <td>
                         <div className="fw-semibold">{formatDate(booking.startDate)}</div>
                         <div className="text-muted small">to {formatDate(booking.endDate)}</div>
+                      </td>
+                      <td>
+                        <span className={`badge bg-${booking.rentalState?.tone || "info"}-subtle text-${booking.rentalState?.tone || "info"}`}>
+                          {booking.rentalState?.label || "Pending"}
+                        </span>
+                        <div className="text-muted small mt-1">{booking.rentalState?.detail || "Awaiting schedule"}</div>
                       </td>
                       <td>{booking.totalDays || 0}</td>
                       <td>{formatCurrency(booking.totalAmount)}</td>
@@ -498,6 +624,13 @@ function Bookings() {
                           <div className="text-muted small">Rental Period</div>
                           <div className="fw-semibold">{formatDate(selectedBooking.startDate)}</div>
                           <div className="text-muted small">to {formatDate(selectedBooking.endDate)}</div>
+                        </div>
+                      </div>
+                      <div className="col-12 col-md-6">
+                        <div className="border rounded-4 p-3 h-100">
+                          <div className="text-muted small">Countdown</div>
+                          <div className="fw-semibold">{selectedBooking.rentalState?.label || "Pending"}</div>
+                          <div className="text-muted small">{selectedBooking.rentalState?.detail || "Awaiting schedule"}</div>
                         </div>
                       </div>
                       <div className="col-12 col-md-4">

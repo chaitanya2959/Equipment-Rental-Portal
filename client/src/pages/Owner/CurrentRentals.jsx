@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { FaPhoneAlt, FaRedo, FaSearch, FaSyncAlt, FaTruck, FaUser } from "react-icons/fa";
+import { FaPhone, FaRotateRight, FaMagnifyingGlass,FaArrowsRotate, FaTruck, FaUser } from "react-icons/fa6";
 import API from "../../services/api";
 
 const imageBaseUrl = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api").replace(/\/api\/?$/, "");
@@ -132,7 +132,7 @@ function CurrentRentals() {
           <p className="text-muted mb-0">Monitor active hires, customer contact details, and rental progress in one place.</p>
         </div>
         <button className="btn btn-outline-primary" onClick={fetchRentals}>
-          <FaSyncAlt className="me-2" /> Refresh
+          <FaArrowsRotate className="me-2" /> Refresh
         </button>
       </div>
 
@@ -159,7 +159,7 @@ function CurrentRentals() {
           <div className="col-12 col-md-5">
             <label className="form-label fw-semibold">Search Rental</label>
             <div className="position-relative">
-              <FaSearch className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" />
+              <FaMagnifyingGlass className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" />
               <input
                 className="form-control ps-5"
                 placeholder="Search equipment or customer"
@@ -187,7 +187,7 @@ function CurrentRentals() {
           </div>
           <div className="col-12 col-md-2">
             <button className="btn btn-primary w-100" onClick={fetchRentals}>
-              <FaRedo className="me-2" /> Refresh
+              <FaRotateRight className="me-2" /> Refresh
             </button>
           </div>
         </div>
@@ -232,7 +232,7 @@ function CurrentRentals() {
                       <span className="fw-semibold">{rental.customer?.name || "Customer"}</span>
                     </div>
                     <div className="d-flex align-items-center gap-2 text-muted small">
-                      <FaPhoneAlt />
+                      <FaPhone />
                       <span>{rental.customer?.phone || "Phone not provided"}</span>
                     </div>
                   </div>
@@ -275,7 +275,7 @@ function CurrentRentals() {
                       <FaTruck className="me-1" /> Mark as Returned
                     </button>
                     <button className="btn btn-outline-secondary btn-sm flex-fill">
-                      <FaPhoneAlt className="me-1" /> Contact
+                      <FaPhone className="me-1" /> Contact
                     </button>
                   </div>
                 </div>

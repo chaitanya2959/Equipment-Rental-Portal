@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { FaBan, FaCheck, FaMagnifyingGlass, FaShield, FaUser, FaUserCheck, FaUserX } from "react-icons/fa6";
+import { FaBan, FaCheck, FaMagnifyingGlass, FaShield, FaUser, FaUserCheck, FaUserSlash } from "react-icons/fa6";
 import api from "../../services/api";
 
 const formatDate = (value) => {

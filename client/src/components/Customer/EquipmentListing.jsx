@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import {
   FaCircleNodes,
   FaFilter,
-  FaHeart,
   FaMagnifyingGlass,
   FaSliders,
 } from "react-icons/fa6";
@@ -19,20 +18,14 @@ const sortOptions = [
 
 const availabilityOptions = ["All", "Available", "Unavailable"];
 
-const formatCurrency = (value) =>
-  new Intl.NumberFormat("en-IN", {
-    maximumFractionDigits: 0,
-    style: "currency",
-    currency: "INR",
-  }).format(value);
-
 function EquipmentListing() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [equipments, setEquipments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("All Categories");
-  const [location, setLocation] = useState("All Locations");
+  const [search, setSearch] = useState(searchParams.get("query") || "");
+  const [category, setCategory] = useState(searchParams.get("category") || "All Categories");
+  const [location, setLocation] = useState(searchParams.get("location") || "All Locations");
   const [availability, setAvailability] = useState("All");
   const [sortBy, setSortBy] = useState("Latest");
   const [currentPage, setCurrentPage] = useState(1);
@@ -64,10 +57,6 @@ function EquipmentListing() {
       isActive = false;
     };
   }, []);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, category, location, availability, sortBy]);
 
   const categoryOptions = useMemo(
     () => [
@@ -149,6 +138,24 @@ function EquipmentListing() {
     console.info("Wishlist clicked for", equipment._id || equipment.id);
   };
 
+  const updateFiltersInUrl = (nextFilters) => {
+    const params = new URLSearchParams(searchParams);
+    const nextQuery = nextFilters.query ?? search;
+    const nextCategory = nextFilters.category ?? category;
+    const nextLocation = nextFilters.location ?? location;
+
+    if (nextQuery) params.set("query", nextQuery);
+    else params.delete("query");
+
+    if (nextCategory && nextCategory !== "All Categories") params.set("category", nextCategory);
+    else params.delete("category");
+
+    if (nextLocation && nextLocation !== "All Locations") params.set("location", nextLocation);
+    else params.delete("location");
+
+    setSearchParams(params, { replace: true });
+  };
+
   return (
     <div className="customer-equipment-page">
       <section className="equipment-hero card border-0">
@@ -203,7 +210,12 @@ function EquipmentListing() {
                 </span>
                 <input
                   className="form-control"
-                  onChange={(event) => setSearch(event.target.value)}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setSearch(value);
+                    setCurrentPage(1);
+                    updateFiltersInUrl({ query: value });
+                  }}
                   placeholder="Search equipment by name"
                   type="search"
                   value={search}
@@ -214,7 +226,12 @@ function EquipmentListing() {
               <label className="form-label fw-semibold">Category</label>
               <select
                 className="form-select equipment-select"
-                onChange={(event) => setCategory(event.target.value)}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setCategory(value);
+                  setCurrentPage(1);
+                  updateFiltersInUrl({ category: value });
+                }}
                 value={category}
               >
                 {categoryOptions.map((option) => (
@@ -228,7 +245,12 @@ function EquipmentListing() {
               <label className="form-label fw-semibold">Location</label>
               <select
                 className="form-select equipment-select"
-                onChange={(event) => setLocation(event.target.value)}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setLocation(value);
+                  setCurrentPage(1);
+                  updateFiltersInUrl({ location: value });
+                }}
                 value={location}
               >
                 {locationOptions.map((option) => (
@@ -240,9 +262,12 @@ function EquipmentListing() {
             </div>
             <div className="col-6 col-lg-2">
               <label className="form-label fw-semibold">Availability</label>
-              <select
+                <select
                 className="form-select equipment-select"
-                onChange={(event) => setAvailability(event.target.value)}
+                onChange={(event) => {
+                  setAvailability(event.target.value);
+                  setCurrentPage(1);
+                }}
                 value={availability}
               >
                 {availabilityOptions.map((option) => (
@@ -256,7 +281,10 @@ function EquipmentListing() {
               <label className="form-label fw-semibold">Sort</label>
               <select
                 className="form-select equipment-select"
-                onChange={(event) => setSortBy(event.target.value)}
+                onChange={(event) => {
+                  setSortBy(event.target.value);
+                  setCurrentPage(1);
+                }}
                 value={sortBy}
               >
                 {sortOptions.map((option) => (

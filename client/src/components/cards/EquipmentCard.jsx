@@ -86,7 +86,7 @@ function EquipmentCard({ equipment, detailsUrl, bookUrl, onAddToWishlist }) {
             >
               <FaHeart /> Add to Wishlist
             </button>
-            <Link className="btn btn-dark btn-sm rounded-pill" to={bookUrl || `/customer/equipment/${equipment._id || equipment.id}?book=1`}>
+            <Link className="btn btn-dark btn-sm rounded-pill" to={bookUrl || detailsUrl || `/customer/equipment/${equipment._id || equipment.id}`}>
               Book Now
             </Link>
           </div>

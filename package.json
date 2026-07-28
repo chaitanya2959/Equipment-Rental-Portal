@@ -1,5 +1,9 @@
 {
-  "dependencies": {
-    "recharts": "^3.10.1"
-  }
+  "name": "Equipment-Rental-Portal",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ]
 }

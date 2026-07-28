@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   FaArrowDownWideShort,
   FaCalendarDays,
@@ -11,6 +12,7 @@ import {
   FaTrashCan,
   FaTriangleExclamation,
 } from "react-icons/fa6";
+import BackButton from "../../components/Common/BackButton";
 import API from "../../services/api";
 
 const API_ROOT = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api").replace(/\/api\/?$/, "");
@@ -233,8 +235,13 @@ function Reviews() {
         <div className="card-body p-4 p-lg-5">
           <div className="d-flex flex-column flex-xl-row justify-content-between align-items-start gap-4">
             <div className="flex-grow-1">
-              <p className="text-uppercase small fw-semibold text-primary mb-2">Owner workspace</p>
-              <h2 className="fw-bold mb-2">Reviews</h2>
+              <div className="d-flex align-items-center gap-3 mb-3">
+                <BackButton label="Back" />
+                <div>
+                  <p className="text-uppercase small fw-semibold text-primary mb-2">Owner workspace</p>
+                  <h2 className="fw-bold mb-2">Reviews</h2>
+                </div>
+              </div>
               <p className="text-secondary mb-0">
                 Track customer feedback, reply to open reviews, and keep your equipment reputation in shape.
               </p>
@@ -463,6 +470,12 @@ function Reviews() {
                         <FaReply className="me-2" />
                         {hasReply ? "Edit Reply" : "Owner Reply"}
                       </button>
+                      <Link
+                        className="btn btn-outline-primary flex-fill"
+                        to={`/owner/reviews/${review._id}?equipmentId=${review.equipment?._id}`}
+                      >
+                        View Details
+                      </Link>
                       <button className="btn btn-outline-danger flex-fill" onClick={() => openDeleteModal(review)} type="button">
                         <FaTrashCan className="me-2" />
                         Delete Review

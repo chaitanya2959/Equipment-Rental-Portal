@@ -1,11 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { FaCircleCheck, FaClipboardList, FaIndianRupeeSign, FaStar } from "react-icons/fa6";
 import API from "../../services/api";
-import EquipmentCard from "../../components/cards/EquipmentCard";
+import OwnerEquipmentCard from "../../components/cards/OwnerEquipmentCard";
 
 const PAGE_SIZE = 6;
 
+const formatCurrency = (value) =>
+  new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(Number(value || 0));
+
 function MyEquipment() {
+  const navigate = useNavigate();
   const [equipments, setEquipments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -17,6 +26,7 @@ function MyEquipment() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [actionId, setActionId] = useState("");
 
   useEffect(() => {
     fetchEquipment();
@@ -45,12 +55,32 @@ function MyEquipment() {
     return values.sort();
   }, [equipments]);
 
+  const stats = useMemo(() => {
+    const total = equipments.length;
+    const active = equipments.filter((item) => item.available).length;
+    const averageRating =
+      total > 0
+        ? equipments.reduce((sum, item) => sum + Number(item.averageRating || 0), 0) / total
+        : 0;
+    const totalRevenue = equipments.reduce((sum, item) => sum + Number(item.totalRevenue || 0), 0);
+
+    return [
+      { label: "Total Equipments", value: total, icon: FaClipboardList },
+      { label: "Active Listings", value: active, icon: FaCircleCheck },
+      { label: "Average Rating", value: averageRating.toFixed(1), icon: FaStar },
+      { label: "Estimated Revenue", value: formatCurrency(totalRevenue), icon: FaIndianRupeeSign },
+    ];
+  }, [equipments]);
+
   const filteredEquipments = useMemo(() => {
     let list = [...equipments];
 
     if (search.trim()) {
       const term = search.toLowerCase();
-      list = list.filter((item) => item.name?.toLowerCase().includes(term));
+      list = list.filter((item) => {
+        const haystack = [item.name, item.category, item.brand, item.location].filter(Boolean).join(" ").toLowerCase();
+        return haystack.includes(term);
+      });
     }
 
     if (category) {
@@ -79,13 +109,45 @@ function MyEquipment() {
     setShowDeleteModal(true);
   };
 
+  const handleToggleAvailability = async (equipment) => {
+    if (!equipment?._id) return;
+
+    try {
+      setActionId(equipment._id);
+      const formData = new FormData();
+      formData.append("available", String(!equipment.available));
+      formData.append("keepImages", "true");
+
+      const res = await API.put(`/equipment/${equipment._id}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      const updatedEquipment = res?.data?.data;
+      if (updatedEquipment?._id) {
+        setEquipments((prev) => prev.map((item) => (item._id === updatedEquipment._id ? updatedEquipment : item)));
+      } else {
+        await fetchEquipment();
+      }
+    } catch (err) {
+      console.error(err);
+      setError(err.response?.data?.message || "Unable to update availability.");
+    } finally {
+      setActionId("");
+    }
+  };
+
+  const handleUpdateImages = (equipment) => {
+    if (!equipment?._id) return;
+    navigate(`/owner/equipment/edit/${equipment._id}#images`);
+  };
+
   const confirmDelete = async () => {
     if (!deleteTarget) return;
 
     try {
       setDeleting(true);
       await API.delete(`/equipment/${deleteTarget._id}`);
-      setEquipments((prev) => prev.filter((item) => item._id !== deleteTarget._id));
+      await fetchEquipment();
       setShowDeleteModal(false);
       setDeleteTarget(null);
     } catch (err) {
@@ -101,11 +163,29 @@ function MyEquipment() {
       <div className="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
         <div>
           <h2 className="fw-bold mb-1">My Equipment</h2>
-          <p className="text-muted mb-0">Manage your rental inventory with a modern owner dashboard view.</p>
+          <p className="text-muted mb-0">Manage your rental inventory with owner-only actions and live equipment data.</p>
         </div>
         <Link to="/owner/equipment/new" className="btn btn-primary">
           + Add Equipment
         </Link>
+      </div>
+
+      <div className="row g-3 mb-4">
+        {stats.map((stat) => (
+          <div className="col-12 col-sm-6 col-xl-3" key={stat.label}>
+            <div className="card border-0 shadow-sm rounded-4 h-100">
+              <div className="card-body d-flex align-items-center justify-content-between gap-3">
+                <div>
+                  <div className="text-muted small">{stat.label}</div>
+                  <div className="fw-bold fs-4 mb-0">{stat.value}</div>
+                </div>
+                <span className="avatar bg-light text-primary rounded-circle d-inline-flex align-items-center justify-content-center" style={{ width: "48px", height: "48px" }}>
+                  <stat.icon aria-hidden="true" />
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
       <div className="card shadow-sm border-0 rounded-4 mb-4">
@@ -186,7 +266,14 @@ function MyEquipment() {
       ) : (
         <div className="row g-4">
           {visibleEquipments.map((equipment) => (
-            <EquipmentCard key={equipment._id} equipment={equipment} onDelete={openDeleteModal} />
+            <OwnerEquipmentCard
+              key={equipment._id}
+              equipment={equipment}
+              onDelete={openDeleteModal}
+              onToggleAvailability={handleToggleAvailability}
+              onUpdateImages={handleUpdateImages}
+              isBusy={actionId === equipment._id}
+            />
           ))}
         </div>
       )}

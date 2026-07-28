@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import BackButton from "../../components/Common/BackButton";
 import {
   FaCalendarDays,
   FaHeart,
@@ -115,14 +116,17 @@ function Wishlist() {
   };
 
   return (
-    <div className="container-fluid px-0">
+    <div className="container-xxl py-4">
       {toast ? <div className="alert alert-success">{toast}</div> : null}
 
       <div className="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
-        <div>
+        <div className="d-flex align-items-center gap-3">
+          <BackButton label="Back" />
+          <div>
           <p className="text-uppercase small fw-semibold text-primary mb-2">Customer workspace</p>
           <h2 className="fw-bold mb-1">Wishlist</h2>
           <p className="text-muted mb-0">Saved equipment stays connected to live backend data and availability.</p>
+          </div>
         </div>
         <Link className="btn btn-primary rounded-pill" to="/customer/equipment">
           <FaHeart className="me-2" />

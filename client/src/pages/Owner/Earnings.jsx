@@ -1,14 +1,39 @@
 import { useEffect, useMemo, useState } from "react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { FaCalendarDays, FaCircleInfo, FaCoins, FaCreditCard, FaIndianRupeeSign, FaWallet } from "react-icons/fa6";
 import API from "../../services/api";
+import BackButton from "../../components/Common/BackButton";
 
-const statusClasses = {
-  Pending: "bg-warning-subtle text-warning",
-  Approved: "bg-success-subtle text-success",
-  Rejected: "bg-danger-subtle text-danger",
-  PickedUp: "bg-info-subtle text-info",
-  Completed: "bg-primary-subtle text-primary",
-  Cancelled: "bg-secondary-subtle text-secondary",
+const PAYMENT_COLORS = ["#0d6efd", "#22c55e", "#f59e0b", "#ef4444"];
+
+const formatCurrency = (value) =>
+  new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(Number(value || 0));
+
+const formatLabel = (value) => {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("en-IN", { month: "short", day: "numeric" });
 };
+
+const isRevenueEligible = (booking) => booking?.paymentStatus === "Paid" || ["Approved", "PickedUp", "Completed"].includes(booking?.status);
 
 function Earnings() {
   const [bookings, setBookings] = useState([]);
@@ -26,98 +51,142 @@ function Earnings() {
       const res = await API.get("/booking/owner");
       setBookings(res?.data?.data || []);
     } catch (err) {
-      console.error(err);
       setError(err.response?.data?.message || "Unable to load earnings data.");
     } finally {
       setLoading(false);
     }
   };
 
-  const formatCurrency = (value) =>
-    new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 0,
-    }).format(Number(value || 0));
-
-  const isRevenueEligible = (booking) => {
-    const paid = booking.paymentStatus === "Paid";
-    const settled = ["Approved", "PickedUp", "Completed"].includes(booking.status);
-    return paid || settled;
-  };
-
-  const getIncomeForRange = (range) => {
+  const summary = useMemo(() => {
     const now = new Date();
-    return bookings.reduce((total, booking) => {
-      if (!isRevenueEligible(booking)) return total;
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - 6);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthBookings = bookings.filter((booking) => {
       const date = new Date(booking.createdAt || booking.updatedAt || booking.startDate);
-      if (!date || Number.isNaN(date.getTime())) return total;
+      return !Number.isNaN(date.getTime()) && date >= startOfMonth;
+    });
 
-      switch (range) {
-        case "today":
-          return date.toDateString() === now.toDateString() ? total + Number(booking.totalAmount || 0) : total;
-        case "week": {
-          const start = new Date(now);
-          start.setDate(now.getDate() - 6);
-          start.setHours(0, 0, 0, 0);
-          return date >= start ? total + Number(booking.totalAmount || 0) : total;
-        }
-        case "month":
-          return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()
-            ? total + Number(booking.totalAmount || 0)
-            : total;
-        case "year":
-          return date.getFullYear() === now.getFullYear()
-            ? total + Number(booking.totalAmount || 0)
-            : total;
-        default:
-          return total;
-      }
+    const weekRevenue = bookings.reduce((sum, booking) => {
+      const date = new Date(booking.createdAt || booking.updatedAt || booking.startDate);
+      if (!isRevenueEligible(booking) || Number.isNaN(date.getTime()) || date < startOfWeek) return sum;
+      return sum + Number(booking.totalAmount || 0);
     }, 0);
-  };
 
-  const chartData = useMemo(() => {
-    const months = [];
+    const monthlyRevenue = monthBookings.reduce((sum, booking) => {
+      if (!isRevenueEligible(booking)) return sum;
+      return sum + Number(booking.totalAmount || 0);
+    }, 0);
+
+    const totalEarnings = bookings.reduce((sum, booking) => {
+      if (!isRevenueEligible(booking)) return sum;
+      return sum + Number(booking.totalAmount || 0);
+    }, 0);
+
+    const pendingPayments = bookings.reduce((sum, booking) => sum + (booking.paymentStatus === "Pending" ? Number(booking.totalAmount || 0) : 0), 0);
+    const depositsReceived = bookings.reduce((sum, booking) => {
+      if (booking.depositStatus === "Received" || booking.depositStatus === "Paid" || booking.paymentStatus === "Paid") {
+        return sum + Number(booking.depositAmount || 0);
+      }
+      return sum;
+    }, 0);
+
+    return {
+      monthlyRevenue,
+      weekRevenue,
+      totalEarnings,
+      pendingPayments,
+      depositsReceived,
+    };
+  }, [bookings]);
+
+  const monthlyRevenueData = useMemo(() => {
     const now = new Date();
-    for (let index = 5; index >= 0; index -= 1) {
-      const monthDate = new Date(now.getFullYear(), now.getMonth() - index, 1);
-      const label = monthDate.toLocaleDateString("en-IN", { month: "short" });
-      const value = bookings.reduce((sum, booking) => {
-        if (!isRevenueEligible(booking)) return sum;
-        const createdAt = new Date(booking.createdAt || booking.updatedAt || booking.startDate);
-        if (!createdAt || Number.isNaN(createdAt.getTime())) return sum;
-        const sameMonth = createdAt.getMonth() === monthDate.getMonth() && createdAt.getFullYear() === monthDate.getFullYear();
-        return sameMonth ? sum + Number(booking.totalAmount || 0) : sum;
+    return Array.from({ length: 6 }, (_, index) => {
+      const monthDate = new Date(now.getFullYear(), now.getMonth() - (5 - index), 1);
+      const monthRevenue = bookings.reduce((sum, booking) => {
+        const date = new Date(booking.createdAt || booking.updatedAt || booking.startDate);
+        if (!isRevenueEligible(booking) || Number.isNaN(date.getTime())) return sum;
+        if (date.getMonth() === monthDate.getMonth() && date.getFullYear() === monthDate.getFullYear()) {
+          return sum + Number(booking.totalAmount || 0);
+        }
+        return sum;
       }, 0);
-      months.push({ label, value });
-    }
-    return months;
+
+      return {
+        month: monthDate.toLocaleDateString("en-IN", { month: "short" }),
+        revenue: monthRevenue,
+      };
+    });
   }, [bookings]);
 
-  const maxValue = Math.max(...chartData.map((item) => item.value), 1);
+  const weeklyRevenueData = useMemo(() => {
+    const now = new Date();
+    return Array.from({ length: 7 }, (_, index) => {
+      const dayDate = new Date(now);
+      dayDate.setDate(now.getDate() - (6 - index));
+      dayDate.setHours(0, 0, 0, 0);
+      const nextDay = new Date(dayDate);
+      nextDay.setDate(dayDate.getDate() + 1);
 
-  const recentTransactions = useMemo(() => {
-    return [...bookings]
-      .sort((a, b) => new Date(b.createdAt || b.updatedAt || b.startDate) - new Date(a.createdAt || a.updatedAt || a.startDate))
-      .slice(0, 6);
+      const revenue = bookings.reduce((sum, booking) => {
+        const date = new Date(booking.createdAt || booking.updatedAt || booking.startDate);
+        if (!isRevenueEligible(booking) || Number.isNaN(date.getTime())) return sum;
+        if (date >= dayDate && date < nextDay) {
+          return sum + Number(booking.totalAmount || 0);
+        }
+        return sum;
+      }, 0);
+
+      return {
+        day: dayDate.toLocaleDateString("en-IN", { weekday: "short" }),
+        revenue,
+      };
+    });
   }, [bookings]);
+
+  const paymentStatusData = useMemo(() => {
+    const counts = bookings.reduce((acc, booking) => {
+      const key = booking.paymentStatus || "Pending";
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {});
+
+    return Object.entries(counts).map(([name, value]) => ({ name, value }));
+  }, [bookings]);
+
+  const recentTransactions = useMemo(
+    () =>
+      [...bookings]
+        .sort((a, b) => new Date(b.createdAt || b.updatedAt || b.startDate) - new Date(a.createdAt || a.updatedAt || a.startDate))
+        .slice(0, 6),
+    [bookings],
+  );
 
   const summaryCards = [
-    { title: "Today’s Income", value: formatCurrency(getIncomeForRange("today")), subtitle: "Today", color: "primary" },
-    { title: "Weekly Income", value: formatCurrency(getIncomeForRange("week")), subtitle: "Last 7 days", color: "success" },
-    { title: "Monthly Income", value: formatCurrency(getIncomeForRange("month")), subtitle: "This month", color: "warning" },
-    { title: "Yearly Income", value: formatCurrency(getIncomeForRange("year")), subtitle: "This year", color: "info" },
+    { title: "Monthly Revenue", value: formatCurrency(summary.monthlyRevenue), icon: FaIndianRupeeSign, tone: "primary" },
+    { title: "Weekly Revenue", value: formatCurrency(summary.weekRevenue), icon: FaCalendarDays, tone: "success" },
+    { title: "Total Earnings", value: formatCurrency(summary.totalEarnings), icon: FaCoins, tone: "info" },
+    { title: "Pending Payments", value: formatCurrency(summary.pendingPayments), icon: FaCreditCard, tone: "warning" },
+    { title: "Deposits Received", value: formatCurrency(summary.depositsReceived), icon: FaWallet, tone: "danger" },
   ];
 
+  const hasRevenueData = monthlyRevenueData.some((item) => item.revenue > 0) || weeklyRevenueData.some((item) => item.revenue > 0);
+
   return (
-    <div className="container-fluid px-0">
-      <div className="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2 mb-4">
-        <div>
-          <p className="text-uppercase small fw-semibold text-primary mb-2">Owner earnings</p>
-          <h2 className="fw-bold mb-1">Earnings Overview</h2>
-          <p className="text-muted mb-0">Track income, review revenue trends, and keep an eye on recent transactions.</p>
+    <div className="container-xxl py-4">
+      <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div className="d-flex align-items-center gap-3">
+          <BackButton label="Back" />
+          <div>
+            <p className="text-uppercase small fw-semibold text-primary mb-2 mb-lg-1">Owner workspace</p>
+            <h2 className="fw-bold mb-0">Earnings Overview</h2>
+            <p className="text-muted mb-0">Track income, payment flow, and monthly revenue trends.</p>
+          </div>
         </div>
-        <span className="badge bg-success-subtle text-success px-3 py-2">Live revenue</span>
+        <span className="badge bg-success-subtle text-success px-3 py-2">Recharts enabled</span>
       </div>
 
       {error ? <div className="alert alert-danger">{error}</div> : null}
@@ -129,79 +198,140 @@ function Earnings() {
         </div>
       ) : (
         <>
-          <div className="row g-4 mb-4">
-            {summaryCards.map((card) => (
-              <div className="col-12 col-md-6 col-xl-3" key={card.title}>
-                <div className="card border-0 shadow-sm rounded-4 h-100">
-                  <div className="card-body p-4">
-                    <div className="d-flex justify-content-between align-items-start">
+          <div className="row g-3 mb-4">
+            {summaryCards.map((card) => {
+              const Icon = card.icon;
+              return (
+                <div className="col-12 col-md-6 col-xl-4" key={card.title}>
+                  <div className="card border-0 shadow-sm rounded-4 h-100">
+                    <div className="card-body p-4 d-flex justify-content-between align-items-start">
                       <div>
-                        <h6 className="text-muted mb-2">{card.title}</h6>
-                        <h3 className={`text-${card.color} fw-bold mb-0`}>{card.value}</h3>
+                        <div className="text-muted small mb-2">{card.title}</div>
+                        <div className={`fw-bold fs-3 text-${card.tone}`}>{card.value}</div>
                       </div>
-                      <span className={`badge bg-${card.color}-subtle text-${card.color}`}>{card.subtitle}</span>
+                      <div className={`rounded-circle bg-${card.tone}-subtle text-${card.tone} d-inline-flex align-items-center justify-content-center`} style={{ width: 44, height: 44 }}>
+                        <Icon />
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="row g-4">
-            <div className="col-xl-8">
+            <div className="col-12 col-xl-8">
               <div className="card border-0 shadow-sm rounded-4 h-100">
                 <div className="card-body p-4">
-                  <div className="d-flex justify-content-between align-items-center mb-4">
+                  <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
                     <div>
-                      <h4 className="fw-bold mb-1">Revenue Graph</h4>
-                      <p className="text-muted mb-0">Income trend across the last 6 months</p>
+                      <h4 className="fw-bold mb-1">Revenue Bar Chart</h4>
+                      <p className="text-muted mb-0">Monthly revenue across the last six months.</p>
                     </div>
-                    <span className="badge bg-light text-dark">Bootstrap chart</span>
+                    <span className="badge bg-light text-dark">ResponsiveContainer</span>
                   </div>
-
-                  <div className="d-flex align-items-end gap-2 mt-4" style={{ minHeight: "260px" }}>
-                    {chartData.map((item) => {
-                      const height = Math.max((item.value / maxValue) * 180, 12);
-                      return (
-                        <div key={item.label} className="flex-fill text-center">
-                          <div className="d-flex justify-content-center align-items-end" style={{ height: "180px" }}>
-                            <div
-                              className="w-100 rounded-top bg-gradient"
-                              style={{
-                                height: `${height}px`,
-                                minHeight: "12px",
-                                background: "linear-gradient(135deg, #0d6efd, #6f42c1)",
-                              }}
-                            />
-                          </div>
-                          <div className="small text-muted mt-2">{item.label}</div>
-                          <div className="fw-semibold small">{formatCurrency(item.value)}</div>
+                  <div style={{ width: "100%", height: 320 }}>
+                    {hasRevenueData ? (
+                      <ResponsiveContainer>
+                        <BarChart data={monthlyRevenueData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="month" />
+                          <YAxis tickFormatter={(value) => `${Number(value) / 1000}k`} />
+                          <Tooltip formatter={(value) => [formatCurrency(value), "Revenue"]} />
+                          <Bar dataKey="revenue" fill="#0d6efd" radius={[8, 8, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="h-100 d-flex align-items-center justify-content-center text-center border rounded-4 bg-light">
+                        <div>
+                          <FaCircleInfo className="fs-1 text-muted mb-3" />
+                          <h5 className="fw-semibold mb-2">No revenue data available</h5>
+                          <p className="text-muted mb-0">Revenue charts will appear after paid bookings are available.</p>
                         </div>
-                      );
-                    })}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="col-xl-4">
+            <div className="col-12 col-xl-4">
+              <div className="card border-0 shadow-sm rounded-4 h-100">
+                <div className="card-body p-4">
+                  <h4 className="fw-bold mb-3">Payment Status</h4>
+                  <div style={{ width: "100%", height: 320 }}>
+                    {paymentStatusData.length > 0 ? (
+                      <ResponsiveContainer>
+                        <PieChart>
+                          <Pie data={paymentStatusData} dataKey="value" nameKey="name" innerRadius={68} outerRadius={110} paddingAngle={2}>
+                            {paymentStatusData.map((entry, index) => (
+                              <Cell key={entry.name} fill={PAYMENT_COLORS[index % PAYMENT_COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="h-100 d-flex align-items-center justify-content-center text-muted">No payment statuses yet.</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="col-12 col-xl-8">
+              <div className="card border-0 shadow-sm rounded-4 h-100">
+                <div className="card-body p-4">
+                  <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+                    <div>
+                      <h4 className="fw-bold mb-1">Monthly Booking Line Chart</h4>
+                      <p className="text-muted mb-0">Weekly revenue trend over the last seven days.</p>
+                    </div>
+                    <span className="badge bg-light text-dark">Mobile responsive</span>
+                  </div>
+                  <div style={{ width: "100%", height: 300 }}>
+                    {hasRevenueData ? (
+                      <ResponsiveContainer>
+                        <LineChart data={weeklyRevenueData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="day" />
+                          <YAxis />
+                          <Tooltip formatter={(value) => [formatCurrency(value), "Revenue"]} />
+                          <Line type="monotone" dataKey="revenue" stroke="#22c55e" strokeWidth={3} dot={{ r: 4 }} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="h-100 d-flex align-items-center justify-content-center text-center border rounded-4 bg-light">
+                        <div>
+                          <FaCircleInfo className="fs-1 text-muted mb-3" />
+                          <h5 className="fw-semibold mb-2">No weekly booking data available</h5>
+                          <p className="text-muted mb-0">The line chart will populate when bookings start posting revenue.</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="col-12 col-xl-4">
               <div className="card border-0 shadow-sm rounded-4 h-100">
                 <div className="card-body p-4">
                   <h4 className="fw-bold mb-3">Recent Transactions</h4>
-                  <div className="d-flex flex-column gap-3">
+                  <div className="d-grid gap-3">
                     {recentTransactions.length > 0 ? (
                       recentTransactions.map((booking) => (
                         <div key={booking._id} className="border rounded-4 p-3">
-                          <div className="d-flex justify-content-between align-items-center mb-2">
-                            <strong>{booking.equipment?.name || "Equipment"}</strong>
-                            <span className={`badge ${statusClasses[booking.status] || "bg-light text-dark"}`}>
-                              {booking.status || "Pending"}
-                            </span>
+                          <div className="d-flex justify-content-between align-items-start gap-2 mb-2">
+                            <div>
+                              <div className="fw-semibold">{booking.equipment?.name || "Equipment"}</div>
+                              <div className="text-muted small">{booking.customer?.name || "Customer"}</div>
+                            </div>
+                            <span className="badge bg-light text-dark">{booking.paymentStatus || "Pending"}</span>
                           </div>
-                          <div className="small text-muted mb-1">{booking.customer?.name || "Customer"}</div>
                           <div className="d-flex justify-content-between align-items-center">
-                            <span className="small text-muted">{new Date(booking.createdAt || booking.updatedAt || booking.startDate).toLocaleDateString("en-IN")}</span>
-                            <span className="fw-semibold text-dark">{formatCurrency(booking.totalAmount || 0)}</span>
+                            <span className="text-muted small">{formatLabel(booking.createdAt || booking.updatedAt || booking.startDate)}</span>
+                            <strong>{formatCurrency(booking.totalAmount || 0)}</strong>
                           </div>
                         </div>
                       ))
