@@ -1,76 +1,66 @@
 .equipment-card {
-  cursor: pointer;
-  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.07);
-  transition:
-    transform 0.3s ease,
-    box-shadow 0.3s ease,
-    border-color 0.3s ease;
+  border-radius: 1.5rem !important;
+  overflow: hidden;
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
 }
 
 .equipment-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 28px 55px rgba(15, 23, 42, 0.12);
-  border-color: rgba(37, 99, 235, 0.2);
+}
+
+.equipment-card.is-compact {
+  min-width: 100%;
 }
 
 .equipment-card-image-wrap {
+  aspect-ratio: 16 / 11;
+  background: rgba(255, 255, 255, 0.03);
   position: relative;
-  overflow: hidden;
-  background: #f3f4f6;
 }
 
 .equipment-card-image {
-  width: 100%;
-  height: 240px;
+  height: 100%;
   object-fit: cover;
-  transition: transform 0.4s ease;
+  width: 100%;
 }
 
-.equipment-card:hover .equipment-card-image {
-  transform: scale(1.04);
+.equipment-card-status,
+.equipment-card-badge,
+.equipment-price-badge {
+  backdrop-filter: blur(18px);
 }
 
 .equipment-card-status {
-  position: absolute;
-  top: 1rem;
+  align-items: center;
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 0.75rem;
+  font-weight: 900;
   left: 1rem;
   padding: 0.4rem 0.75rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  backdrop-filter: blur(10px);
+  position: absolute;
+  top: 1rem;
+  z-index: 1;
 }
 
-.equipment-card-status.is-available {
-  background: rgba(34, 197, 94, 0.92);
-  color: #fff;
+.equipment-wishlist-button {
+  transition: transform 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
 }
 
-.equipment-card-status.is-unavailable {
-  background: rgba(239, 68, 68, 0.92);
-  color: #fff;
+.equipment-wishlist-button:hover {
+  transform: scale(1.05);
 }
 
 .equipment-card-title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-.equipment-price-badge {
-  background: #eff6ff;
-  border-radius: 999px;
-  color: #1d4ed8;
-  font-size: 0.8rem;
-  font-weight: 700;
-  padding: 0.45rem 0.75rem;
-  white-space: nowrap;
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
 }
 
 .equipment-card-meta {
   display: grid;
   gap: 0.65rem;
-  padding: 0.9rem 0 1.15rem;
+  padding: 0.4rem 0 1.15rem;
 }
 
 .equipment-meta-row {
@@ -81,12 +71,14 @@
   font-size: 0.9rem;
 }
 
-.equipment-meta-row span {
-  color: #6b7280;
-}
-
 .equipment-meta-row strong {
-  color: #111827;
-  font-weight: 600;
   min-width: 0;
 }
+
+.equipment-card .btn {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+

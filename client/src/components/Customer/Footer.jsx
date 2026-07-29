@@ -1,14 +1,21 @@
 import { Link } from "react-router-dom";
-import { FaFacebookF, FaInstagram, FaLinkedinIn, FaXTwitter, FaYoutube } from "react-icons/fa6";
+import {
+  FaFacebookF,
+  FaInstagram,
+  FaLinkedinIn,
+  FaXTwitter,
+  FaYoutube,
+  FaArrowRight,
+} from "react-icons/fa6";
 
 function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
     <footer className="customer-footer">
-      <div className="container-fluid">
-        <div className="row g-4 g-lg-5">
-          <div className="col-12 col-md-6 col-xl-3">
+      <div className="container-fluid px-3 px-xxl-4">
+        <div className="customer-footer-grid">
+          <div>
             <div className="customer-footer-brand">
               <div className="customer-brand-mark">R</div>
               <div>
@@ -17,7 +24,7 @@ function Footer() {
               </div>
             </div>
             <p className="customer-footer-copy mt-3">
-              Premium equipment rental experience built for fast discovery, reliable bookings and a clean customer journey.
+              A polished customer experience for discovering equipment, tracking bookings, and staying connected with owners.
             </p>
             <div className="customer-socials">
               <a aria-label="Facebook" href="/" onClick={(event) => event.preventDefault()}>
@@ -38,8 +45,8 @@ function Footer() {
             </div>
           </div>
 
-          <div className="col-6 col-xl-2">
-            <h6 className="customer-footer-heading">Company</h6>
+          <div>
+            <h6 className="customer-footer-heading">Explore</h6>
             <ul className="customer-footer-links">
               <li><Link to="/about">About</Link></li>
               <li><Link to="/contact">Contact</Link></li>
@@ -48,7 +55,17 @@ function Footer() {
             </ul>
           </div>
 
-          <div className="col-6 col-xl-3">
+          <div>
+            <h6 className="customer-footer-heading">Customer</h6>
+            <ul className="customer-footer-links">
+              <li><Link to="/customer/dashboard">Dashboard</Link></li>
+              <li><Link to="/customer/equipment">Equipment</Link></li>
+              <li><Link to="/customer/bookings">Bookings</Link></li>
+              <li><Link to="/customer/wishlist">Wishlist</Link></li>
+            </ul>
+          </div>
+
+          <div>
             <h6 className="customer-footer-heading">Categories</h6>
             <ul className="customer-footer-links">
               <li><Link to="/equipment?category=Construction">Construction</Link></li>
@@ -58,28 +75,27 @@ function Footer() {
             </ul>
           </div>
 
-          <div className="col-6 col-xl-2">
-            <h6 className="customer-footer-heading">Quick Links</h6>
-            <ul className="customer-footer-links">
-              <li><Link to="/customer/dashboard">Dashboard</Link></li>
-              <li><Link to="/customer/wishlist">Wishlist</Link></li>
-              <li><Link to="/customer/bookings">Bookings</Link></li>
-              <li><Link to="/customer/profile">Profile</Link></li>
-            </ul>
-          </div>
-
-          <div className="col-6 col-xl-2">
-            <h6 className="customer-footer-heading">Contact</h6>
-            <ul className="customer-footer-links">
-              <li><a href="mailto:support@renthub.com">support@renthub.com</a></li>
-              <li><a href="tel:+911234567890">+91 12345 67890</a></li>
-              <li><span>Hyderabad, India</span></li>
-            </ul>
+          <div className="customer-footer-cta">
+            <div className="customer-footer-banner">
+              <div className="customer-footer-banner-title">Need equipment fast?</div>
+              <p className="customer-footer-banner-copy mb-3">
+                Search the live marketplace and book verified equipment in minutes.
+              </p>
+              <div className="d-flex flex-wrap gap-2">
+                <Link className="btn btn-light rounded-pill" to="/customer/equipment">
+                  Browse catalog
+                </Link>
+                <Link className="btn btn-outline-light rounded-pill" to="/customer/bookings">
+                  <FaArrowRight />
+                  Track bookings
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
 
         <div className="customer-footer-bottom">
-          <div>© {currentYear} RentHub. All rights reserved.</div>
+          <div>(c) {currentYear} RentHub. All rights reserved.</div>
           <div className="customer-footer-bottom-links">
             <Link to="/about">Privacy</Link>
             <Link to="/contact">Terms</Link>

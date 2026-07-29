@@ -1,19 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  FaBell,
   FaBars,
+  FaBell,
   FaHeart,
-  FaRegCircleUser,
-  FaCircleUser,
+  FaMagnifyingGlass,
+  FaMessage,
   FaXmark,
   FaBoxOpen,
-  FaTruckRampBox,
-  FaScrewdriverWrench,
   FaHouse,
-  FaShieldHeart,
+  FaShirt,
+  FaBolt,
+  FaCameraRetro,
+  FaUser,
   FaCalendarDays,
-  FaBellSlash,
+  FaBagShopping,
 } from "react-icons/fa6";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../services/api";
@@ -22,19 +23,12 @@ import NotificationDropdown from "./NotificationDropdown";
 import ProfileDropdown from "./ProfileDropdown";
 
 const CATEGORY_OPTIONS = [
-  { label: "All Categories", value: "all", icon: <FaBoxOpen /> },
-  { label: "Construction", value: "construction", icon: <FaTruckRampBox /> },
-  { label: "Tools", value: "tools", icon: <FaScrewdriverWrench /> },
-  { label: "Home & Garden", value: "home-garden", icon: <FaHouse /> },
-  { label: "Safety Gear", value: "safety", icon: <FaShieldHeart /> },
-];
-
-const NAV_LINKS = [
-  { label: "Dashboard", to: "/customer/dashboard", icon: <FaHouse /> },
-  { label: "Equipment", to: "/customer/equipment", icon: <FaBoxOpen /> },
-  { label: "Bookings", to: "/customer/bookings", icon: <FaCalendarDays /> },
-  { label: "Wishlist", to: "/customer/wishlist", icon: <FaHeart /> },
-  { label: "Profile", to: "/customer/profile", icon: <FaRegCircleUser /> },
+  { label: "All Categories", value: "all", icon: FaBoxOpen },
+  { label: "Construction", value: "construction", icon: FaBolt },
+  { label: "Tools", value: "tools", icon: FaBoxOpen },
+  { label: "Events", value: "events", icon: FaCalendarDays },
+  { label: "Photography", value: "photography", icon: FaCameraRetro },
+  { label: "Home Care", value: "home-care", icon: FaShirt },
 ];
 
 function CustomerNavbar() {
@@ -157,14 +151,17 @@ function CustomerNavbar() {
     navigate("/customer/notifications");
   };
 
+  const activeCategoryLabel =
+    CATEGORY_OPTIONS.find((item) => item.value === category)?.label || "All Categories";
+
   return (
     <header className="customer-navbar-wrap" ref={shellRef}>
-      <nav className="navbar navbar-expand-xl customer-navbar sticky-top">
-        <div className="container-fluid px-3 px-lg-4">
-          <div className="d-flex align-items-center gap-2 flex-grow-1">
+      <nav className="navbar customer-navbar">
+        <div className="container-fluid px-3 px-xxl-4">
+          <div className="customer-navbar-left">
             <button
               aria-label={mobileOpen ? "Close menu" : "Open menu"}
-              className="btn customer-icon-button d-xl-none"
+              className="btn customer-icon-button d-lg-none"
               type="button"
               onClick={() => setMobileOpen((current) => !current)}
             >
@@ -175,13 +172,19 @@ function CustomerNavbar() {
               <span className="customer-brand-mark">R</span>
               <span className="customer-brand-copy">
                 <strong>RentHub</strong>
-                <small>Equipment Rental Portal</small>
+                <small>Premium rental marketplace</small>
               </span>
             </Link>
           </div>
 
-          <div className="d-none d-xl-flex align-items-center gap-3 flex-grow-1 mx-4">
-            <SearchBar value={search} onChange={(event) => setSearch(event.target.value)} onSubmit={handleSearchSubmit} />
+          <div className="customer-navbar-search d-none d-lg-flex">
+            <SearchBar
+              className="customer-searchbar-compact"
+              placeholder="Search equipment, bookings, owners..."
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              onSubmit={handleSearchSubmit}
+            />
 
             <div className="customer-category-select">
               <button
@@ -190,30 +193,41 @@ function CustomerNavbar() {
                 type="button"
                 onClick={() => setCategoryOpen((current) => !current)}
               >
-                {CATEGORY_OPTIONS.find((item) => item.value === category)?.label || "All Categories"}
+                <span>{activeCategoryLabel}</span>
               </button>
               <div className={`dropdown-menu customer-category-menu ${categoryOpen ? "show" : ""}`}>
-                {CATEGORY_OPTIONS.map((item) => (
-                  <button
-                    className={`dropdown-item customer-category-item ${category === item.value ? "active" : ""}`}
-                    key={item.value}
-                    type="button"
-                    onClick={() => {
-                      setCategory(item.value);
-                      setCategoryOpen(false);
-                    }}
-                  >
-                    <span className="customer-category-icon">{item.icon}</span>
-                    <span>{item.label}</span>
-                  </button>
-                ))}
+                {CATEGORY_OPTIONS.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      className={`dropdown-item customer-category-item ${category === item.value ? "active" : ""}`}
+                      key={item.value}
+                      type="button"
+                      onClick={() => {
+                        setCategory(item.value);
+                        setCategoryOpen(false);
+                      }}
+                    >
+                      <span className="customer-category-icon">
+                        <Icon />
+                      </span>
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
 
-          <div className="d-flex align-items-center gap-2 gap-lg-3 ms-auto">
-            <Link className="btn customer-icon-button d-none d-md-inline-flex" to="/customer/wishlist">
+          <div className="customer-navbar-actions">
+            <Link className="btn customer-icon-button d-none d-md-inline-flex" to="/customer/equipment" aria-label="Browse equipment">
+              <FaHouse />
+            </Link>
+            <Link className="btn customer-icon-button d-none d-md-inline-flex" to="/customer/wishlist" aria-label="Wishlist">
               <FaHeart />
+            </Link>
+            <Link className="btn customer-icon-button d-none d-md-inline-flex" to="/customer/bookings" aria-label="Messages">
+              <FaMessage />
             </Link>
 
             <div className="position-relative">
@@ -274,7 +288,7 @@ function CustomerNavbar() {
         </div>
       </nav>
 
-      <div className={`customer-mobile-drawer d-xl-none ${mobileOpen ? "show" : ""}`}>
+      <div className={`customer-mobile-drawer d-lg-none ${mobileOpen ? "show" : ""}`}>
         <div className="customer-mobile-panel">
           <div className="d-flex align-items-center justify-content-between gap-3">
             <div>
@@ -287,7 +301,13 @@ function CustomerNavbar() {
           </div>
 
           <div className="mt-3">
-            <SearchBar value={search} onChange={(event) => setSearch(event.target.value)} onSubmit={handleSearchSubmit} />
+            <SearchBar
+              className="customer-searchbar-compact"
+              placeholder="Search equipment, bookings, owners..."
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              onSubmit={handleSearchSubmit}
+            />
           </div>
 
           <div className="dropdown customer-mobile-category mt-3">
@@ -297,54 +317,71 @@ function CustomerNavbar() {
               type="button"
               onClick={() => setCategoryOpen((current) => !current)}
             >
-              {CATEGORY_OPTIONS.find((item) => item.value === category)?.label || "All Categories"}
+              <span>{activeCategoryLabel}</span>
             </button>
             <div className={`dropdown-menu customer-category-menu w-100 ${categoryOpen ? "show" : ""}`}>
-              {CATEGORY_OPTIONS.map((item) => (
-                <button
-                  className={`dropdown-item customer-category-item ${category === item.value ? "active" : ""}`}
-                  key={item.value}
-                  type="button"
-                  onClick={() => {
-                    setCategory(item.value);
-                    setCategoryOpen(false);
-                  }}
-                >
-                  <span className="customer-category-icon">{item.icon}</span>
-                  <span>{item.label}</span>
-                </button>
-              ))}
+              {CATEGORY_OPTIONS.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    className={`dropdown-item customer-category-item ${category === item.value ? "active" : ""}`}
+                    key={item.value}
+                    type="button"
+                    onClick={() => {
+                      setCategory(item.value);
+                      setCategoryOpen(false);
+                    }}
+                  >
+                    <span className="customer-category-icon">
+                      <Icon />
+                    </span>
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           <div className="customer-mobile-links mt-3">
-            {NAV_LINKS.map((item) => (
-              <Link
-                className={`customer-mobile-link ${location.pathname === item.to ? "active" : ""}`}
-                key={item.to}
-                to={item.to}
-              >
-                <span className="customer-mobile-link-icon">{item.icon}</span>
-                <span>{item.label}</span>
-              </Link>
-            ))}
+            <Link className={`customer-mobile-link ${location.pathname === "/customer/dashboard" ? "active" : ""}`} to="/customer/dashboard">
+              <span className="customer-mobile-link-icon">
+                <FaHouse />
+              </span>
+              <span>Dashboard</span>
+            </Link>
+            <Link className={`customer-mobile-link ${location.pathname.startsWith("/customer/equipment") ? "active" : ""}`} to="/customer/equipment">
+              <span className="customer-mobile-link-icon">
+                <FaBagShopping />
+              </span>
+              <span>Equipment</span>
+            </Link>
+            <Link className={`customer-mobile-link ${location.pathname.startsWith("/customer/bookings") ? "active" : ""}`} to="/customer/bookings">
+              <span className="customer-mobile-link-icon">
+                <FaCalendarDays />
+              </span>
+              <span>Bookings</span>
+            </Link>
+            <Link className={`customer-mobile-link ${location.pathname.startsWith("/customer/wishlist") ? "active" : ""}`} to="/customer/wishlist">
+              <span className="customer-mobile-link-icon">
+                <FaHeart />
+              </span>
+              <span>Wishlist</span>
+            </Link>
+            <Link className={`customer-mobile-link ${location.pathname.startsWith("/customer/profile") ? "active" : ""}`} to="/customer/profile">
+              <span className="customer-mobile-link-icon">
+                <FaUser />
+              </span>
+              <span>Profile</span>
+            </Link>
           </div>
 
           <div className="customer-mobile-actions mt-3">
             {isAuthenticated ? (
               <>
-                <Link className="btn btn-light rounded-pill w-100 justify-content-start" to="/customer/profile">
-                  <FaRegCircleUser />
-                  <span>Profile</span>
-                </Link>
-                <Link className="btn btn-light rounded-pill w-100 justify-content-start" to="/customer/bookings">
-                  <FaCalendarDays />
-                  <span>Bookings</span>
-                </Link>
-                <Link className="btn btn-light rounded-pill w-100 justify-content-start" to="/customer/wishlist">
-                  <FaHeart />
-                  <span>Wishlist</span>
-                </Link>
+                <button className="btn btn-light rounded-pill w-100 justify-content-start" type="button" onClick={() => navigate("/customer/bookings")}>
+                  <FaMessage />
+                  <span>Messages</span>
+                </button>
                 <button className="btn btn-outline-danger rounded-pill w-100 justify-content-start" type="button" onClick={handleLogout}>
                   <FaXmark />
                   <span>Logout</span>

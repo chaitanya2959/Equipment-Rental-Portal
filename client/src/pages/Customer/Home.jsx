@@ -1,27 +1,28 @@
-﻿import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import {
   FaArrowRight,
-  FaBell,
   FaCalendarDay,
   FaCircleCheck,
   FaCircleExclamation,
   FaClock,
   FaHeart,
   FaHouse,
-  FaMusic,
+  FaHammer,
   FaCameraRetro,
   FaLeaf,
-  FaHammer,
+  FaMagnifyingGlass,
+  FaMusic,
   FaShieldHeart,
+  FaStar,
   FaTruckFast,
   FaWallet,
-  FaStar,
   FaWrench,
 } from "react-icons/fa6";
 import api from "../../services/api";
 import EquipmentCard from "../../components/cards/EquipmentCard";
+import SearchBar from "../../components/Customer/SearchBar";
 import "../../components/Customer/customer-layout.css";
 import "./customer-home.css";
 
@@ -40,11 +41,12 @@ const formatCurrency = (value) =>
     style: "currency",
     currency: "INR",
     maximumFractionDigits: 0,
-  }).format(value || 0);
+  }).format(Number(value || 0));
 
 const formatDate = (value) => {
   if (!value) return "-";
   const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
   return date.toLocaleDateString("en-IN", {
     day: "numeric",
     month: "short",
@@ -54,12 +56,15 @@ const formatDate = (value) => {
 
 function Home() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [summary, setSummary] = useState(null);
   const [equipments, setEquipments] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -105,6 +110,18 @@ function Home() {
 
   const recentlyAdded = useMemo(() => sortedByDate.slice(0, 4), [sortedByDate]);
 
+  const trendingEquipments = useMemo(() => {
+    return [...equipments]
+      .filter((equipment) => equipment.available !== false)
+      .sort((a, b) => {
+        const scoreA = (a.totalReviews || 0) * 2 + Number(a.averageRating || a.rating || 0);
+        const scoreB = (b.totalReviews || 0) * 2 + Number(b.averageRating || b.rating || 0);
+        if (scoreB !== scoreA) return scoreB - scoreA;
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      })
+      .slice(0, 4);
+  }, [equipments]);
+
   const featuredEquipments = useMemo(() => {
     return [...equipments]
       .sort((a, b) => {
@@ -129,6 +146,17 @@ function Home() {
       .slice(0, 6)
       .map(([category, count]) => ({ category, count }));
   }, [equipments]);
+
+  const recommendedEquipments = useMemo(() => {
+    const preferredCategories = new Set(popularCategories.slice(0, 3).map((item) => item.category));
+    const fallback = [...equipments]
+      .filter((equipment) => equipment.available !== false)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    const preferred = fallback.filter((equipment) => preferredCategories.has(equipment.category));
+    const pool = [...preferred, ...fallback.filter((equipment) => !preferredCategories.has(equipment.category))];
+    return pool.slice(0, 4);
+  }, [equipments, popularCategories]);
 
   const activeBookings = useMemo(
     () => bookings.filter((booking) => ["Approved", "PickedUp"].includes(booking.status)),
@@ -165,417 +193,569 @@ function Home() {
     });
   }, [bookings]);
 
-  const latestNotifications = useMemo(() => notifications.slice(0, 5), [notifications]);
+  const latestNotifications = useMemo(() => notifications.slice(0, 4), [notifications]);
 
-  const getCategoryIcon = (label) => {
-    const Icon = categoryIconMap[label] || FaCircleCheck;
-    return <Icon />;
+  const reviewSeedIds = useMemo(() => {
+    const ids = [...trendingEquipments, ...recentlyAdded, ...featuredEquipments]
+      .map((equipment) => equipment._id || equipment.id)
+      .filter(Boolean);
+    return [...new Set(ids)].slice(0, 4);
+  }, [featuredEquipments, recentlyAdded, trendingEquipments]);
+
+  useEffect(() => {
+    let active = true;
+
+    const fetchReviews = async () => {
+      if (!reviewSeedIds.length) {
+        setReviews([]);
+        return;
+      }
+
+      try {
+        const responses = await Promise.all(
+          reviewSeedIds.map((equipmentId) =>
+            api.get(`/reviews/${equipmentId}`).catch(() => ({ data: { data: [] } })),
+          ),
+        );
+
+        if (!active) return;
+
+        const feed = responses.flatMap((response) => response?.data?.data || []);
+        feed.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        setReviews(feed.slice(0, 4));
+      } catch {
+        if (active) setReviews([]);
+      }
+    };
+
+    fetchReviews();
+    return () => {
+      active = false;
+    };
+  }, [reviewSeedIds]);
+
+  const heroStats = [
+    {
+      title: "Live listings",
+      value: equipments.length,
+      note: "Verified equipment in the catalog",
+      icon: <FaShieldHeart />,
+    },
+    {
+      title: "Active bookings",
+      value: summary?.activeBookings ?? activeBookings.length,
+      note: "Rentals currently in progress",
+      icon: <FaCalendarDay />,
+    },
+    {
+      title: "Total spent",
+      value: formatCurrency(summary?.totalSpent ?? 0),
+      note: "Across confirmed rentals",
+      icon: <FaWallet />,
+    },
+    {
+      title: "Saved items",
+      value: summary?.wishlistCount ?? 0,
+      note: "Shortlist from the marketplace",
+      icon: <FaHeart />,
+    },
+  ];
+
+  const summaryTiles = [
+    {
+      title: "Completed rentals",
+      value: summary?.completedBookings ?? 0,
+      icon: <FaCircleCheck className="fs-4" />,
+    },
+    {
+      title: "Pending reviews",
+      value: summary?.reviewCount ?? 0,
+      icon: <FaStar className="fs-4" />,
+    },
+    {
+      title: "Unread notifications",
+      value: latestNotifications.filter((item) => !item.isRead).length,
+      icon: <FaMagnifyingGlass className="fs-4" />,
+    },
+  ];
+
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    navigate(`/customer/equipment?query=${encodeURIComponent(search)}`);
   };
 
-  const renderSummaryCard = (title, value, icon, note) => (
-    <div className="col-6 col-md-4 col-xl-2">
-      <div className="home-stat-card h-100">
-        <div className="d-flex align-items-center gap-3 mb-3 text-primary">{icon}</div>
-        <div className="home-card-title">{loading ? <span className="placeholder col-6"></span> : value}</div>
-        <div className="home-card-meta">{loading ? <span className="placeholder col-8"></span> : note}</div>
-      </div>
-    </div>
-  );
+  const handleCategoryJump = (category) => {
+    navigate(`/customer/equipment?category=${encodeURIComponent(category)}`);
+  };
 
-  const renderEquipmentPlaceholders = (count = 4) =>
-    Array.from({ length: count }).map((_, index) => (
-      <div className="col-12 col-md-6 col-xl-3" key={index}>
-        <div className="home-equipment-card placeholder-glow h-100 p-3">
-          <div className="placeholder col-12 mb-3" style={{ height: "180px" }}></div>
-          <div className="placeholder col-8 mb-2"></div>
-          <div className="placeholder col-6 mb-3"></div>
-          <div className="placeholder col-10 mb-2"></div>
-          <div className="placeholder col-12"></div>
+  const renderRail = (items, emptyState, variant = "compact") => {
+    if (loading) {
+      return (
+        <div className="home-rail d-flex gap-4 overflow-auto pb-2">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div className="home-rail-item placeholder-glow" key={index}>
+              <div className="home-placeholder-card">
+                <div className="placeholder rounded-4 w-100" style={{ aspectRatio: "16 / 11" }} />
+                <div className="p-3">
+                  <div className="placeholder col-8 mb-2" />
+                  <div className="placeholder col-5 mb-3" />
+                  <div className="placeholder col-12 mb-2" />
+                  <div className="placeholder col-10" />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
+      );
+    }
+
+    if (!items.length) {
+      return (
+        <div className="customer-surface p-4 text-center">
+          <FaCircleExclamation className="fs-1 text-muted mb-3" />
+          <h3 className="home-card-title mb-2">{emptyState.title}</h3>
+          <p className="home-card-meta mb-0">{emptyState.copy}</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="home-rail d-flex gap-4 overflow-auto pb-2">
+        {items.map((equipment) => (
+          <div className="home-rail-item" key={equipment._id || equipment.id}>
+            <EquipmentCard
+              equipment={equipment}
+              detailsUrl={`/customer/equipment/${equipment._id || equipment.id}`}
+              bookUrl={`/customer/equipment/${equipment._id || equipment.id}?book=1`}
+              variant={variant}
+            />
+          </div>
+        ))}
       </div>
-    ));
+    );
+  };
 
   return (
     <div className="customer-home">
-      <section className="home-hero py-4">
-        <div className="container-fluid">
-          <div className="row g-4 align-items-center">
-            <div className="col-12 col-lg-8">
-              <div className="home-hero-copy">
-                <span className="home-hero-pill">
-                  <FaShieldHeart />
-                  Customer dashboard
-                </span>
-                <h1 className="home-hero-title mt-3">Welcome back, {welcomeName}</h1>
-                <p className="home-hero-text">
-                  All your rental activity, equipment insights, and notifications are shown here from your live account data.
-                </p>
-                <div className="home-hero-actions mt-4">
-                  <Link className="btn btn-primary btn-lg rounded-pill px-4" to="/customer/equipment">
-                    Browse equipment
-                  </Link>
-                  <Link className="btn btn-light btn-lg rounded-pill px-4" to="/customer/bookings">
-                    View bookings
-                  </Link>
+      <section className="home-hero customer-hero-card p-4 p-lg-5">
+        <div className="row g-4 align-items-center">
+          <div className="col-12 col-xl-7">
+            <span className="home-hero-pill">
+              <FaShieldHeart />
+              Premium customer marketplace
+            </span>
+            <h1 className="home-hero-title mt-3">Rent premium equipment from one polished workspace.</h1>
+            <p className="home-hero-text">
+              Search live inventory, compare verified listings, keep track of bookings, and stay ahead of pickup and return dates.
+            </p>
+
+            <div className="home-search-panel mt-4 p-3 p-lg-4">
+              <SearchBar
+                className="customer-searchbar-compact customer-searchbar-large"
+                placeholder="Search equipment, owners, categories, or locations..."
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                onSubmit={handleSearchSubmit}
+              />
+              <div className="home-chip-row mt-3">
+                {popularCategories.length > 0 ? (
+                  popularCategories.map(({ category, count }) => {
+                    const Icon = categoryIconMap[category] || FaCircleCheck;
+                    return (
+                      <button
+                        className="home-chip"
+                        key={category}
+                        type="button"
+                        onClick={() => handleCategoryJump(category)}
+                      >
+                        <Icon />
+                        <span>{category}</span>
+                        <small>{count}</small>
+                      </button>
+                    );
+                  })
+                ) : (
+                  <span className="home-card-meta">Category chips will appear once inventory is available.</span>
+                )}
+              </div>
+            </div>
+
+            <div className="home-hero-actions mt-4">
+              <Link className="btn btn-primary btn-lg rounded-pill px-4" to="/customer/equipment">
+                Browse equipment
+                <FaArrowRight />
+              </Link>
+              <Link className="btn btn-outline-secondary btn-lg rounded-pill px-4" to="/customer/bookings">
+                View bookings
+              </Link>
+              <Link className="btn btn-outline-secondary btn-lg rounded-pill px-4" to="/customer/wishlist">
+                Wishlist
+              </Link>
+            </div>
+          </div>
+
+          <div className="col-12 col-xl-5">
+            <div className="home-hero-panel h-100">
+              <div className="home-summary-grid">
+                {heroStats.map((item) => (
+                  <div className="home-summary-card" key={item.title}>
+                    <div className="home-summary-icon">{item.icon}</div>
+                    <div className="home-card-meta">{item.title}</div>
+                    <div className="home-summary-value">{item.value}</div>
+                    <div className="home-card-meta">{item.note}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="home-hero-stack mt-4">
+                <div className="home-hero-stack-row">
+                  <span>Pickup reminders</span>
+                  <strong>{pickupReminders.length}</strong>
+                </div>
+                <div className="home-hero-stack-row">
+                  <span>Return reminders</span>
+                  <strong>{returnReminders.length}</strong>
+                </div>
+                <div className="home-hero-stack-row">
+                  <span>Unread notifications</span>
+                  <strong>{latestNotifications.filter((item) => !item.isRead).length}</strong>
                 </div>
               </div>
             </div>
-            <div className="col-12 col-lg-4">
-              <div className="home-hero-panel p-4 h-100">
-                <div className="home-search-card p-4">
-                  <div className="d-flex align-items-center justify-content-between mb-3">
-                    <div>
-                      <p className="eyebrow mb-1">Summary</p>
-                      <strong className="home-card-title">Live account status</strong>
+          </div>
+        </div>
+
+        {error ? <div className="alert alert-danger mt-4 mb-0">{error}</div> : null}
+      </section>
+
+      <section className="py-2">
+        <div className="d-flex align-items-end justify-content-between gap-3 mb-3 flex-wrap">
+          <div>
+            <p className="eyebrow mb-2">Trending equipment</p>
+            <h2 className="home-section-title">Most engaged rentals</h2>
+          </div>
+          <Link className="btn btn-outline-secondary rounded-pill" to="/customer/equipment">
+            View all
+            <FaArrowRight />
+          </Link>
+        </div>
+        {renderRail(
+          trendingEquipments,
+          {
+            title: "No trending equipment yet",
+            copy: "Trending rentals will appear once owner listings gather activity.",
+          },
+        )}
+      </section>
+
+      <section className="py-2">
+        <div className="d-flex align-items-end justify-content-between gap-3 mb-3 flex-wrap">
+          <div>
+            <p className="eyebrow mb-2">Recently added</p>
+            <h2 className="home-section-title">Fresh inventory from owners</h2>
+          </div>
+          <Link className="btn btn-outline-secondary rounded-pill" to="/customer/equipment">
+            View all equipment
+            <FaArrowRight />
+          </Link>
+        </div>
+        {renderRail(
+          recentlyAdded,
+          {
+            title: "No recent listings",
+            copy: "New inventory will show up here as owners add approved equipment.",
+          },
+        )}
+      </section>
+
+      <section className="py-2">
+        <div className="row g-4">
+          <div className="col-12 col-xl-7">
+            <div className="d-flex align-items-end justify-content-between gap-3 mb-3 flex-wrap">
+              <div>
+                <p className="eyebrow mb-2">Featured equipment</p>
+                <h2 className="home-section-title">Top-rated rentals to consider</h2>
+              </div>
+              <Link className="btn btn-outline-secondary rounded-pill" to="/customer/equipment">
+                Browse featured
+                <FaArrowRight />
+              </Link>
+            </div>
+
+            <div className="row g-4">
+              {loading
+                ? Array.from({ length: 4 }).map((_, index) => (
+                    <div className="col-12 col-md-6" key={index}>
+                      <div className="home-placeholder-card placeholder-glow">
+                        <div className="placeholder rounded-top-4 w-100" style={{ aspectRatio: "16 / 11" }} />
+                        <div className="p-3">
+                          <div className="placeholder col-8 mb-2" />
+                          <div className="placeholder col-5 mb-3" />
+                          <div className="placeholder col-12 mb-2" />
+                          <div className="placeholder col-10" />
+                        </div>
+                      </div>
                     </div>
-                    <FaBell className="text-primary" />
+                  ))
+                : featuredEquipments.length > 0
+                ? featuredEquipments.map((equipment) => (
+                    <EquipmentCard
+                      key={equipment._id || equipment.id}
+                      equipment={equipment}
+                      detailsUrl={`/customer/equipment/${equipment._id || equipment.id}`}
+                      bookUrl={`/customer/equipment/${equipment._id || equipment.id}?book=1`}
+                    />
+                  ))
+                : (
+                  <div className="col-12">
+                    <div className="customer-surface p-4 text-center">
+                      <FaCircleExclamation className="fs-1 text-muted mb-3" />
+                      <h3 className="home-card-title mb-2">No featured equipment yet</h3>
+                      <p className="home-card-meta mb-0">
+                        Featured rentals will surface once the marketplace has more activity.
+                      </p>
+                    </div>
                   </div>
-                  <div className="home-card-meta mb-3">
-                    {loading ? (
-                      <span className="placeholder col-7"></span>
+                )}
+            </div>
+          </div>
+
+          <div className="col-12 col-xl-5">
+            <div className="home-side-panel p-4 h-100">
+              <p className="eyebrow mb-2">Recommended for you</p>
+              <h2 className="home-section-title mb-4">A tighter fit for your current activity</h2>
+              {renderRail(
+                recommendedEquipments,
+                {
+                  title: "No recommendations yet",
+                  copy: "Recommendations will appear once the catalog has enough live inventory.",
+                },
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-2">
+        <div className="d-flex align-items-end justify-content-between gap-3 mb-3 flex-wrap">
+          <div>
+            <p className="eyebrow mb-2">Latest reviews</p>
+            <h2 className="home-section-title">Recent customer feedback</h2>
+          </div>
+          <Link className="btn btn-outline-secondary rounded-pill" to="/customer/equipment">
+            Open catalog
+            <FaArrowRight />
+          </Link>
+        </div>
+
+        {loading ? (
+          <div className="row g-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div className="col-12 col-lg-6" key={index}>
+                <div className="home-review-card placeholder-glow p-4">
+                  <div className="placeholder col-5 mb-3" />
+                  <div className="placeholder col-12 mb-2" />
+                  <div className="placeholder col-10 mb-2" />
+                  <div className="placeholder col-7" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : reviews.length > 0 ? (
+          <div className="row g-4">
+            {reviews.map((review) => (
+              <div className="col-12 col-lg-6" key={review._id}>
+                <div className="home-review-card p-4 h-100">
+                  <div className="d-flex align-items-start justify-content-between gap-3 mb-3">
+                    <div>
+                      <div className="home-review-name">{review.customer?.name || "Customer"}</div>
+                      <div className="home-card-meta">{review.equipment?.name || "Equipment"}</div>
+                    </div>
+                    <div className="home-rating-pill">
+                      <FaStar />
+                      <span>{Number(review.rating || 0).toFixed(1)}</span>
+                    </div>
+                  </div>
+                  <p className="home-review-copy mb-3">{review.review || "No review text provided."}</p>
+                  <div className="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                    <span className="home-card-meta">{formatDate(review.createdAt)}</span>
+                    {review.ownerReply?.trim() ? (
+                      <span className="badge bg-success-subtle text-success">Owner replied</span>
                     ) : (
-                      "Your dashboard updates whenever inventory or bookings change."
+                      <span className="badge bg-light text-dark">Latest feedback</span>
                     )}
                   </div>
-                  <div className="d-flex flex-wrap gap-2">
-                    <span className="badge rounded-pill bg-primary text-white">
-                      Bookings: {loading ? <span className="placeholder col-4"></span> : summary?.totalBookings ?? 0}
-                    </span>
-                    <span className="badge rounded-pill bg-secondary text-white">
-                      Spent: {loading ? <span className="placeholder col-4"></span> : formatCurrency(summary?.totalSpent ?? 0)}
-                    </span>
-                  </div>
                 </div>
               </div>
-            </div>
+            ))}
           </div>
-
-          {error ? (
-            <div className="alert alert-danger mt-4">{error}</div>
-          ) : null}
-
-          {pickupReminders.length > 0 || returnReminders.length > 0 ? (
-            <div className="row g-3 mt-4">
-              {pickupReminders.length > 0 ? (
-                <div className="col-12 col-lg-6">
-                  <div className="public-reminder">
-                    <strong>Pickup reminder</strong>
-                    <div className="small mt-1">Your equipment pickup is within 24 hours.</div>
-                  </div>
-                </div>
-              ) : null}
-              {returnReminders.length > 0 ? (
-                <div className="col-12 col-lg-6">
-                  <div className="public-reminder">
-                    <strong>Return reminder</strong>
-                    <div className="small mt-1">Please return equipment tomorrow.</div>
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-
-          <div className="row g-3 mt-4">
-            {renderSummaryCard(
-              "Active bookings",
-              loading ? null : summary?.activeBookings ?? 0,
-              <FaCalendarDay className="fs-4" />,
-              "Bookings currently in progress",
-            )}
-            {renderSummaryCard(
-              "Completed rentals",
-              loading ? null : summary?.completedBookings ?? 0,
-              <FaCircleCheck className="fs-4" />,
-              "Successful rentals closed",
-            )}
-            {renderSummaryCard(
-              "Wishlist",
-              loading ? null : summary?.wishlistCount ?? 0,
-              <FaHeart className="fs-4" />,
-              "Items you have saved",
-            )}
-            {renderSummaryCard(
-              "Pending reviews",
-              loading ? null : summary?.reviewCount ?? 0,
-              <FaStar className="fs-4" />,
-              "Feedback waiting for you",
-            )}
-            <div className="col-6 col-md-4 col-xl-2">
-              <div className="home-stat-card h-100">
-                <div className="d-flex align-items-center gap-3 mb-3 text-primary">
-                  <FaWallet className="fs-4" />
-                </div>
-                <div className="home-card-title">
-                  {loading ? <span className="placeholder col-6"></span> : formatCurrency(summary?.totalSpent ?? 0)}
-                </div>
-                <div className="home-card-meta">Total spent on rentals</div>
-              </div>
-            </div>
+        ) : (
+          <div className="customer-surface p-4 text-center">
+            <FaCircleExclamation className="fs-1 text-muted mb-3" />
+            <h3 className="home-card-title mb-2">No reviews yet</h3>
+            <p className="home-card-meta mb-0">Reviews will appear here after customers complete rentals and submit feedback.</p>
           </div>
-        </div>
+        )}
       </section>
 
-      <section className="py-4">
-        <div className="container-fluid">
-          <div className="d-flex align-items-end justify-content-between gap-3 mb-4 flex-wrap">
-            <div>
-              <p className="eyebrow mb-2">Recently added equipment</p>
-              <h2 className="home-section-title">Latest inventory from owners</h2>
-            </div>
-            <Link className="btn btn-outline-primary rounded-pill" to="/customer/equipment">
-              View all equipment
-              <FaArrowRight />
-            </Link>
-          </div>
-
-          <div className="row g-4">
-            {loading
-              ? renderEquipmentPlaceholders(4)
-              : recentlyAdded.length > 0
-              ? recentlyAdded.map((equipment) => (
-                  <EquipmentCard
-                    key={equipment._id || equipment.id}
-                    equipment={equipment}
-                    detailsUrl={`/customer/equipment/${equipment._id || equipment.id}`}
-                    bookUrl={`/customer/equipment/${equipment._id || equipment.id}?book=1`}
-                  />
-                ))
-              : (
-                <div className="col-12">
-                  <div className="home-list-card p-4 text-center">
-                    <FaCircleExclamation className="fs-1 text-muted mb-3" />
-                    <h3 className="home-card-title mb-2">No equipment available</h3>
-                    <p className="home-card-meta mb-0">
-                      New inventory will appear here once owners add approved equipment.
-                    </p>
-                  </div>
-                </div>
-              )}
-          </div>
-        </div>
-      </section>
-
-      <section className="py-4 bg-light">
-        <div className="container-fluid">
-          <div className="row g-4">
-            <div className="col-12 col-xl-8">
+      <section className="py-2">
+        <div className="row g-4">
+          <div className="col-12 col-xl-6">
+            <div className="home-list-card p-4 h-100">
               <div className="d-flex align-items-end justify-content-between gap-3 mb-4 flex-wrap">
                 <div>
-                  <p className="eyebrow mb-2">Featured equipment</p>
-                  <h2 className="home-section-title">Top-rated rentals to consider</h2>
+                  <p className="eyebrow mb-2">Active bookings</p>
+                  <h2 className="home-section-title">Your current rentals</h2>
                 </div>
-                <Link className="btn btn-outline-primary rounded-pill" to="/customer/equipment">
-                  Browse featured
+                <Link className="btn btn-outline-secondary rounded-pill" to="/customer/bookings">
+                  See all bookings
                   <FaArrowRight />
                 </Link>
               </div>
 
-              <div className="row g-4">
-                {loading
-                  ? renderEquipmentPlaceholders(4)
-                  : featuredEquipments.length > 0
-                  ? featuredEquipments.map((equipment) => (
-                      <EquipmentCard
-                        key={equipment._id || equipment.id}
-                        equipment={equipment}
-                        detailsUrl={`/customer/equipment/${equipment._id || equipment.id}`}
-                        bookUrl={`/customer/equipment/${equipment._id || equipment.id}?book=1`}
-                      />
-                    ))
-                  : (
-                    <div className="col-12">
-                      <div className="home-list-card p-4 text-center">
-                        <FaCircleExclamation className="fs-1 text-muted mb-3" />
-                        <h3 className="home-card-title mb-2">No featured equipment yet</h3>
-                        <p className="home-card-meta mb-0">Featured rentals will populate once your marketplace grows.</p>
+              {loading ? (
+                <div className="placeholder-glow">
+                  {Array.from({ length: 4 }).map((_, index) => (
+                    <div className="mb-3" key={index}>
+                      <div className="placeholder col-12 mb-2" />
+                      <div className="placeholder col-8" />
+                    </div>
+                  ))}
+                </div>
+              ) : activeBookings.length > 0 ? (
+                <div className="list-group">
+                  {activeBookings.slice(0, 4).map((booking) => (
+                    <div key={booking._id} className="list-group-item list-group-item-action mb-3">
+                      <div className="d-flex align-items-start gap-3 flex-wrap">
+                        <div className="flex-grow-1 min-w-0">
+                          <strong>{booking.equipment?.name || "Equipment"}</strong>
+                          <div className="home-card-meta">
+                            {booking.equipment?.category || "Category"} · {formatDate(booking.startDate)} - {formatDate(booking.endDate)}
+                          </div>
+                        </div>
+                        <div className="text-end">
+                          <div className="badge bg-success-subtle text-success">{booking.status}</div>
+                          <div className="home-card-meta mt-2">{formatCurrency(booking.totalAmount)}</div>
+                        </div>
                       </div>
                     </div>
-                  )}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-5">
+                  <FaCircleExclamation className="fs-1 text-muted mb-3" />
+                  <h3 className="home-card-title mb-2">No active bookings</h3>
+                  <p className="home-card-meta mb-0">Start a rental from the equipment catalog.</p>
+                </div>
+              )}
             </div>
+          </div>
 
-            <div className="col-12 col-xl-4">
-              <div className="home-category-card p-4 h-100">
-                <p className="eyebrow mb-2">Popular categories</p>
-                <h2 className="home-card-title mb-4">What customers are renting</h2>
-                <div className="row g-3">
-                  {loading
-                    ? Array.from({ length: 6 }).map((_, index) => (
-                        <div className="col-6" key={index}>
-                          <div className="home-category-card placeholder-glow p-3">
-                            <span className="placeholder col-8"></span>
-                            <span className="placeholder col-5"></span>
-                          </div>
-                        </div>
-                      ))
-                    : popularCategories.length > 0
-                    ? popularCategories.map(({ category, count }) => (
-                        <div className="col-6" key={category}>
-                          <div className="home-category-card p-3 h-100">
-                            <div className="home-category-icon mb-3">{getCategoryIcon(category)}</div>
-                            <strong className="d-block mb-1">{category}</strong>
-                            <span className="home-card-meta">{count} items</span>
-                          </div>
-                        </div>
-                      ))
-                    : (
-                      <div className="col-12 text-center">
-                        <div className="home-list-card p-4">
-                          <FaCircleExclamation className="fs-1 text-muted mb-3" />
-                          <h3 className="home-card-title mb-2">No category data</h3>
-                          <p className="home-card-meta mb-0">Categories will appear after equipment is live.</p>
-                        </div>
-                      </div>
-                    )}
+          <div className="col-12 col-xl-6">
+            <div className="home-list-card p-4 h-100">
+              <div className="d-flex align-items-end justify-content-between gap-3 mb-4 flex-wrap">
+                <div>
+                  <p className="eyebrow mb-2">Upcoming returns</p>
+                  <h2 className="home-section-title">Return reminders</h2>
                 </div>
               </div>
+
+              {loading ? (
+                <div className="placeholder-glow">
+                  {Array.from({ length: 3 }).map((_, index) => (
+                    <div className="mb-3" key={index}>
+                      <div className="placeholder col-12 mb-2" />
+                      <div className="placeholder col-5" />
+                    </div>
+                  ))}
+                </div>
+              ) : upcomingReturns.length > 0 ? (
+                <div className="list-group">
+                  {upcomingReturns.map((booking) => (
+                    <div key={booking._id} className="list-group-item list-group-item-action mb-3">
+                      <div className="d-flex align-items-start gap-3 flex-wrap">
+                        <div className="flex-grow-1 min-w-0">
+                          <strong>{booking.equipment?.name || "Equipment"}</strong>
+                          <div className="home-card-meta">Return by {formatDate(booking.returnDate)}</div>
+                        </div>
+                        <div className="text-end">
+                          <div className="badge bg-info-subtle text-info">Due soon</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-5">
+                  <FaClock className="fs-1 text-muted mb-3" />
+                  <h3 className="home-card-title mb-2">No upcoming returns</h3>
+                  <p className="home-card-meta mb-0">Your current rentals do not have return dates soon.</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </section>
 
-      <section className="py-4">
-        <div className="container-fluid">
+      <section className="py-2">
+        <div className="d-flex align-items-end justify-content-between gap-3 mb-3 flex-wrap">
+          <div>
+            <p className="eyebrow mb-2">Recent notifications</p>
+            <h2 className="home-section-title">What’s new in your account</h2>
+          </div>
+          <Link className="btn btn-outline-secondary rounded-pill" to="/customer/notifications">
+            View all notifications
+            <FaArrowRight />
+          </Link>
+        </div>
+
+        {loading ? (
           <div className="row g-4">
-            <div className="col-12 col-xl-6">
-              <div className="home-list-card p-4 h-100">
-                <div className="d-flex align-items-end justify-content-between gap-3 mb-4 flex-wrap">
-                  <div>
-                    <p className="eyebrow mb-2">Active bookings</p>
-                    <h2 className="home-section-title">Your current rentals</h2>
-                  </div>
-                  <Link className="btn btn-outline-primary rounded-pill" to="/customer/bookings">
-                    See all bookings
-                    <FaArrowRight />
-                  </Link>
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div className="col-12 col-md-6" key={index}>
+                <div className="home-review-card placeholder-glow p-4">
+                  <div className="placeholder col-6 mb-2" />
+                  <div className="placeholder col-12" />
                 </div>
-
-                {loading ? (
-                  <div className="placeholder-glow">
-                    {Array.from({ length: 4 }).map((_, index) => (
-                      <div className="mb-3" key={index}>
-                        <div className="placeholder col-12 mb-2"></div>
-                        <div className="placeholder col-8"></div>
-                      </div>
-                    ))}
-                  </div>
-                ) : activeBookings.length > 0 ? (
-                  <div className="list-group">
-                    {activeBookings.slice(0, 4).map((booking) => (
-                      <div key={booking._id} className="list-group-item list-group-item-action rounded-4 mb-3">
-                        <div className="d-flex align-items-start gap-3 flex-wrap">
-                          <div className="flex-grow-1 min-w-0">
-                            <strong>{booking.equipment?.name || "Equipment"}</strong>
-                            <div className="home-card-meta">{booking.equipment?.category || "Category"} · {formatDate(booking.startDate)} – {formatDate(booking.endDate)}</div>
-                          </div>
-                          <div className="text-end">
-                            <div className="badge rounded-pill bg-success">{booking.status}</div>
-                            <div className="home-card-meta mt-2">{formatCurrency(booking.totalAmount)}</div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-5">
-                    <FaCircleExclamation className="fs-1 text-muted mb-3" />
-                    <h3 className="home-card-title mb-2">No active bookings</h3>
-                    <p className="home-card-meta mb-0">Start a rental from the equipment catalog.</p>
-                  </div>
-                )}
               </div>
-            </div>
-
-            <div className="col-12 col-xl-6">
-              <div className="home-list-card p-4 h-100">
-                <div className="d-flex align-items-end justify-content-between gap-3 mb-4 flex-wrap">
-                  <div>
-                    <p className="eyebrow mb-2">Upcoming returns</p>
-                    <h2 className="home-section-title">Return reminders</h2>
-                  </div>
-                </div>
-
-                {loading ? (
-                  <div className="placeholder-glow">
-                    {Array.from({ length: 3 }).map((_, index) => (
-                      <div className="mb-3" key={index}>
-                        <div className="placeholder col-12 mb-2"></div>
-                        <div className="placeholder col-5"></div>
-                      </div>
-                    ))}
-                  </div>
-                ) : upcomingReturns.length > 0 ? (
-                  <div className="list-group">
-                    {upcomingReturns.map((booking) => (
-                      <div key={booking._id} className="list-group-item list-group-item-action rounded-4 mb-3">
-                        <div className="d-flex align-items-start gap-3 flex-wrap">
-                          <div className="flex-grow-1 min-w-0">
-                            <strong>{booking.equipment?.name || "Equipment"}</strong>
-                            <div className="home-card-meta">Return by {formatDate(booking.returnDate)}</div>
-                          </div>
-                          <div className="text-end">
-                            <div className="badge rounded-pill bg-info text-dark">Due soon</div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-5">
-                    <FaClock className="fs-1 text-muted mb-3" />
-                    <h3 className="home-card-title mb-2">No upcoming returns</h3>
-                    <p className="home-card-meta mb-0">Your current rentals do not have return dates soon.</p>
-                  </div>
-                )}
-              </div>
-            </div>
+            ))}
           </div>
-        </div>
+        ) : latestNotifications.length > 0 ? (
+          <div className="row g-4">
+            {latestNotifications.map((notification) => (
+              <div className="col-12 col-md-6" key={notification._id || notification.id}>
+                <div className="home-review-card p-4 h-100">
+                  <div className="d-flex align-items-center justify-content-between mb-3">
+                    <strong>{notification.title || "Notification"}</strong>
+                    <span className="text-muted small">{formatDate(notification.createdAt)}</span>
+                  </div>
+                  <p className="home-card-meta mb-0">{notification.message}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="customer-surface p-4 text-center">
+            <FaCircleExclamation className="fs-1 text-muted mb-3" />
+            <h3 className="home-card-title mb-2">No notifications yet</h3>
+            <p className="home-card-meta mb-0">Notifications appear when bookings or equipment statuses change.</p>
+          </div>
+        )}
       </section>
 
-      <section className="py-4 bg-light">
-        <div className="container-fluid">
-          <div className="d-flex align-items-end justify-content-between gap-3 mb-4 flex-wrap">
-            <div>
-              <p className="eyebrow mb-2">Recent notifications</p>
-              <h2 className="home-section-title">What’s new in your account</h2>
-            </div>
-            <Link className="btn btn-outline-primary rounded-pill" to="/customer/notifications">
-              View all notifications
-              <FaArrowRight />
-            </Link>
-          </div>
-
-          {loading ? (
-            <div className="placeholder-glow">
-              {Array.from({ length: 4 }).map((_, index) => (
-                <div key={index} className="home-rated-card p-4 mb-3 placeholder-glow">
-                  <div className="placeholder col-6 mb-2"></div>
-                  <div className="placeholder col-12"></div>
+      <section className="py-2 pb-4">
+        <div className="row g-3">
+          {summaryTiles.map((tile) => (
+            <div className="col-12 col-md-4" key={tile.title}>
+              <div className="home-summary-strip p-4 h-100 d-flex align-items-center justify-content-between gap-3">
+                <div>
+                  <div className="home-card-meta mb-1">{tile.title}</div>
+                  <div className="home-summary-value">{tile.value}</div>
                 </div>
-              ))}
+                <div className="home-summary-icon">{tile.icon}</div>
+              </div>
             </div>
-          ) : latestNotifications.length > 0 ? (
-            <div className="row g-4">
-              {latestNotifications.map((notification) => (
-                <div className="col-12 col-md-6" key={notification._id || notification.id}>
-                  <div className="home-rated-card p-4 h-100">
-                    <div className="d-flex align-items-center justify-content-between mb-3">
-                      <strong>{notification.title || "Notification"}</strong>
-                      <span className="text-muted small">{formatDate(notification.createdAt)}</span>
-                    </div>
-                    <p className="home-card-meta mb-0">{notification.message}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="home-list-card p-4 text-center">
-              <FaCircleExclamation className="fs-1 text-muted mb-3" />
-              <h3 className="home-card-title mb-2">No notifications yet</h3>
-              <p className="home-card-meta mb-0">Notifications appear when your bookings or equipment status changes.</p>
-            </div>
-          )}
+          ))}
         </div>
       </section>
     </div>
@@ -583,3 +763,4 @@ function Home() {
 }
 
 export default Home;
+
