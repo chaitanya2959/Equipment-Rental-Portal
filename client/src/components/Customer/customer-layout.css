@@ -685,7 +685,9 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: var(--customer-shadow);
   opacity: 0;
+  pointer-events: none;
   position: absolute;
+  visibility: hidden;
   transform: translateY(-8px);
   transition: opacity 0.18s ease, transform 0.18s ease;
   backdrop-filter: blur(24px);
@@ -694,6 +696,8 @@
 
 .customer-dropdown.show {
   opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
   transform: translateY(0);
 }
 
@@ -1179,6 +1183,11 @@
 
 body.customer-menu-open {
   overflow: hidden;
+}
+
+body.customer-modal-open .customer-workspace {
+  position: relative;
+  z-index: 2000;
 }
 
 .customer-section-title,
@@ -2091,4 +2100,3 @@ body.customer-menu-open {
     flex-direction: column;
   }
 }
-

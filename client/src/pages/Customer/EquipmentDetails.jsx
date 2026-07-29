@@ -175,6 +175,13 @@ function EquipmentDetails() {
   }, [reviewToast]);
 
   useEffect(() => {
+    document.body.classList.toggle("customer-modal-open", bookingOpen || reviewOpen || chatOpen);
+    return () => {
+      document.body.classList.remove("customer-modal-open");
+    };
+  }, [bookingOpen, chatOpen, reviewOpen]);
+
+  useEffect(() => {
     if (!equipment || !canUseCustomerActions || !user) {
       setChatThread(null);
       return undefined;
@@ -921,7 +928,6 @@ function EquipmentDetails() {
                                   endDate: event.target.value,
                                 }))
                               }
-                              onClick={console.log("end button clicked")}
                               type="date"
                               value={bookingForm.endDate}
                             />
