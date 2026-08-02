@@ -9,32 +9,16 @@ import {
   FaClock,
   FaHeart,
   FaHouse,
-  FaHammer,
-  FaCameraRetro,
-  FaLeaf,
   FaMagnifyingGlass,
-  FaMusic,
   FaShieldHeart,
   FaStar,
-  FaTruckFast,
   FaWallet,
-  FaWrench,
+  FaChartSimple,
 } from "react-icons/fa6";
 import api from "../../services/api";
 import EquipmentCard from "../../components/cards/EquipmentCard";
-import SearchBar from "../../components/Customer/SearchBar";
 import "../../components/Customer/customer-layout.css";
 import "./customer-home.css";
-
-const categoryIconMap = {
-  Construction: FaHammer,
-  "Power Tools": FaWrench,
-  "Power Backup": FaTruckFast,
-  "Home Care": FaHouse,
-  Events: FaMusic,
-  Photography: FaCameraRetro,
-  Garden: FaLeaf,
-};
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat("en-IN", {
@@ -61,7 +45,6 @@ function Home() {
   const [equipments, setEquipments] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [notifications, setNotifications] = useState([]);
-  const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
@@ -103,13 +86,6 @@ function Home() {
 
   const welcomeName = user?.name || "Customer";
 
-  const sortedByDate = useMemo(
-    () => [...equipments].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
-    [equipments],
-  );
-
-  const recentlyAdded = useMemo(() => sortedByDate.slice(0, 4), [sortedByDate]);
-
   const trendingEquipments = useMemo(() => {
     return [...equipments]
       .filter((equipment) => equipment.available !== false)
@@ -119,7 +95,7 @@ function Home() {
         if (scoreB !== scoreA) return scoreB - scoreA;
         return new Date(b.createdAt) - new Date(a.createdAt);
       })
-      .slice(0, 4);
+      .slice(0, 3);
   }, [equipments]);
 
   const featuredEquipments = useMemo(() => {
@@ -131,32 +107,8 @@ function Home() {
         if (ratingDelta !== 0) return ratingDelta;
         return new Date(b.createdAt) - new Date(a.createdAt);
       })
-      .slice(0, 4);
+      .slice(0, 3);
   }, [equipments]);
-
-  const popularCategories = useMemo(() => {
-    const categoryCounts = equipments.reduce((acc, equipment) => {
-      if (!equipment.category) return acc;
-      acc[equipment.category] = (acc[equipment.category] || 0) + 1;
-      return acc;
-    }, {});
-
-    return Object.entries(categoryCounts)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 6)
-      .map(([category, count]) => ({ category, count }));
-  }, [equipments]);
-
-  const recommendedEquipments = useMemo(() => {
-    const preferredCategories = new Set(popularCategories.slice(0, 3).map((item) => item.category));
-    const fallback = [...equipments]
-      .filter((equipment) => equipment.available !== false)
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-    const preferred = fallback.filter((equipment) => preferredCategories.has(equipment.category));
-    const pool = [...preferred, ...fallback.filter((equipment) => !preferredCategories.has(equipment.category))];
-    return pool.slice(0, 4);
-  }, [equipments, popularCategories]);
 
   const activeBookings = useMemo(
     () => bookings.filter((booking) => ["Approved", "PickedUp"].includes(booking.status)),
@@ -168,140 +120,29 @@ function Home() {
     return bookings
       .filter((booking) => booking.status === "PickedUp" && booking.returnDate && new Date(booking.returnDate) >= today)
       .sort((a, b) => new Date(a.returnDate) - new Date(b.returnDate))
-      .slice(0, 4);
-  }, [bookings]);
-
-  const pickupReminders = useMemo(() => {
-    const now = new Date();
-    return bookings.filter((booking) => {
-      if (booking.status !== "Approved" || !booking.startDate) return false;
-      const start = new Date(booking.startDate);
-      if (Number.isNaN(start.getTime())) return false;
-      const hoursRemaining = (start - now) / (1000 * 60 * 60);
-      return hoursRemaining >= 0 && hoursRemaining <= 24;
-    });
-  }, [bookings]);
-
-  const returnReminders = useMemo(() => {
-    const now = new Date();
-    return bookings.filter((booking) => {
-      if (booking.status !== "PickedUp" || !booking.endDate) return false;
-      const end = new Date(booking.endDate);
-      if (Number.isNaN(end.getTime())) return false;
-      const diffDays = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
-      return diffDays === 1;
-    });
+      .slice(0, 3);
   }, [bookings]);
 
   const latestNotifications = useMemo(() => notifications.slice(0, 4), [notifications]);
 
-  const reviewSeedIds = useMemo(() => {
-    const ids = [...trendingEquipments, ...recentlyAdded, ...featuredEquipments]
-      .map((equipment) => equipment._id || equipment.id)
-      .filter(Boolean);
-    return [...new Set(ids)].slice(0, 4);
-  }, [featuredEquipments, recentlyAdded, trendingEquipments]);
-
-  useEffect(() => {
-    let active = true;
-
-    const fetchReviews = async () => {
-      if (!reviewSeedIds.length) {
-        setReviews([]);
-        return;
-      }
-
-      try {
-        const responses = await Promise.all(
-          reviewSeedIds.map((equipmentId) =>
-            api.get(`/reviews/${equipmentId}`).catch(() => ({ data: { data: [] } })),
-          ),
-        );
-
-        if (!active) return;
-
-        const feed = responses.flatMap((response) => response?.data?.data || []);
-        feed.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        setReviews(feed.slice(0, 4));
-      } catch {
-        if (active) setReviews([]);
-      }
-    };
-
-    fetchReviews();
-    return () => {
-      active = false;
-    };
-  }, [reviewSeedIds]);
-
-  const heroStats = [
-    {
-      title: "Live listings",
-      value: equipments.length,
-      note: "Verified equipment in the catalog",
-      icon: <FaShieldHeart />,
-    },
-    {
-      title: "Active bookings",
-      value: summary?.activeBookings ?? activeBookings.length,
-      note: "Rentals currently in progress",
-      icon: <FaCalendarDay />,
-    },
-    {
-      title: "Total spent",
-      value: formatCurrency(summary?.totalSpent ?? 0),
-      note: "Across confirmed rentals",
-      icon: <FaWallet />,
-    },
-    {
-      title: "Saved items",
-      value: summary?.wishlistCount ?? 0,
-      note: "Shortlist from the marketplace",
-      icon: <FaHeart />,
-    },
-  ];
-
-  const summaryTiles = [
-    {
-      title: "Completed rentals",
-      value: summary?.completedBookings ?? 0,
-      icon: <FaCircleCheck className="fs-4" />,
-    },
-    {
-      title: "Pending reviews",
-      value: summary?.reviewCount ?? 0,
-      icon: <FaStar className="fs-4" />,
-    },
-    {
-      title: "Unread notifications",
-      value: latestNotifications.filter((item) => !item.isRead).length,
-      icon: <FaMagnifyingGlass className="fs-4" />,
-    },
-  ];
-
   const handleSearchSubmit = (event) => {
     event.preventDefault();
-    navigate(`/customer/equipment?query=${encodeURIComponent(search)}`);
+    if (search.trim()) {
+      navigate(`/customer/equipment?query=${encodeURIComponent(search)}`);
+    }
   };
 
-  const handleCategoryJump = (category) => {
-    navigate(`/customer/equipment?category=${encodeURIComponent(category)}`);
-  };
-
-  const renderRail = (items, emptyState, variant = "compact") => {
+  const renderRail = (items, emptyState, variant = "css-grid") => {
     if (loading) {
       return (
-        <div className="home-rail d-flex gap-4 overflow-auto pb-2">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <div className="home-rail-item placeholder-glow" key={index}>
-              <div className="home-placeholder-card">
-                <div className="placeholder rounded-4 w-100" style={{ aspectRatio: "16 / 11" }} />
-                <div className="p-3">
-                  <div className="placeholder col-8 mb-2" />
-                  <div className="placeholder col-5 mb-3" />
-                  <div className="placeholder col-12 mb-2" />
-                  <div className="placeholder col-10" />
-                </div>
+        <div className="equipment-grid">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div className="home-placeholder-card placeholder-glow" key={index}>
+              <div className="placeholder rounded-4 w-100" style={{ aspectRatio: "16 / 10" }} />
+              <div className="p-4">
+                <div className="placeholder col-8 mb-2" />
+                <div className="placeholder col-5 mb-3" />
+                <div className="placeholder col-12" />
               </div>
             </div>
           ))}
@@ -311,7 +152,7 @@ function Home() {
 
     if (!items.length) {
       return (
-        <div className="customer-surface p-4 text-center">
+        <div className="customer-surface p-5 text-center rounded-4 border">
           <FaCircleExclamation className="fs-1 text-muted mb-3" />
           <h3 className="home-card-title mb-2">{emptyState.title}</h3>
           <p className="home-card-meta mb-0">{emptyState.copy}</p>
@@ -320,16 +161,15 @@ function Home() {
     }
 
     return (
-      <div className="home-rail d-flex gap-4 overflow-auto pb-2">
+      <div className="equipment-grid">
         {items.map((equipment) => (
-          <div className="home-rail-item" key={equipment._id || equipment.id}>
-            <EquipmentCard
-              equipment={equipment}
-              detailsUrl={`/customer/equipment/${equipment._id || equipment.id}`}
-              bookUrl={`/customer/equipment/${equipment._id || equipment.id}?book=1`}
-              variant={variant}
-            />
-          </div>
+          <EquipmentCard
+            key={equipment._id || equipment.id}
+            equipment={equipment}
+            detailsUrl={`/customer/equipment/${equipment._id || equipment.id}`}
+            bookUrl={`/customer/equipment/${equipment._id || equipment.id}?book=1`}
+            variant={variant}
+          />
         ))}
       </div>
     );
@@ -337,285 +177,214 @@ function Home() {
 
   return (
     <div className="customer-home">
-      <section className="home-hero customer-hero-card p-4 p-lg-5">
+      {error && <div className="alert alert-danger mb-4">{error}</div>}
+
+      {/* Welcome Banner */}
+      <section className="customer-welcome-banner p-4 p-lg-5">
         <div className="row g-4 align-items-center">
-          <div className="col-12 col-xl-7">
-            <span className="home-hero-pill">
-              <FaShieldHeart />
-              Premium customer marketplace
+          <div className="col-12 col-lg-7">
+            <span className="welcome-badge-pill mb-3">
+              <FaShieldHeart className="me-2" />
+              Premium Customer Marketplace
             </span>
-            <h1 className="home-hero-title mt-3">Rent premium equipment from one polished workspace.</h1>
-            <p className="home-hero-text">
-              Search live inventory, compare verified listings, keep track of bookings, and stay ahead of pickup and return dates.
+            <h1 className="welcome-title mt-2">
+              Welcome back,<br />
+              <strong className="text-gradient">{welcomeName}</strong> 👋
+            </h1>
+            <p className="welcome-subtitle mt-3">
+              Find, book, and manage the best equipment for your next rental project.
             </p>
-
-            <div className="home-search-panel mt-4 p-3 p-lg-4">
-              <SearchBar
-                className="customer-searchbar-compact customer-searchbar-large"
-                placeholder="Search equipment, owners, categories, or locations..."
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                onSubmit={handleSearchSubmit}
-              />
-              <div className="home-chip-row mt-3">
-                {popularCategories.length > 0 ? (
-                  popularCategories.map(({ category, count }) => {
-                    const Icon = categoryIconMap[category] || FaCircleCheck;
-                    return (
-                      <button
-                        className="home-chip"
-                        key={category}
-                        type="button"
-                        onClick={() => handleCategoryJump(category)}
-                      >
-                        <Icon />
-                        <span>{category}</span>
-                        <small>{count}</small>
-                      </button>
-                    );
-                  })
-                ) : (
-                  <span className="home-card-meta">Category chips will appear once inventory is available.</span>
-                )}
-              </div>
+          </div>
+          <div className="col-12 col-lg-5 text-center d-none d-lg-block">
+            <div className="welcome-illustration-container">
+              <svg viewBox="0 0 500 350" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-100 h-100" style={{ maxHeight: "260px", objectFit: "contain" }}>
+                <circle cx="400" cy="120" r="100" fill="url(#circleGrad1)" opacity="0.4" />
+                <circle cx="280" cy="240" r="80" fill="url(#circleGrad2)" opacity="0.3" />
+                <path d="M420,320 C430,280 460,260 480,260 C460,280 435,300 420,320 Z" fill="#b5ffd9" />
+                <path d="M440,320 C450,290 480,280 495,290 C475,300 455,310 440,320 Z" fill="#8effc1" />
+                <rect x="50" y="310" width="400" height="12" rx="6" fill="#ece4f7" />
+                <rect x="70" y="322" width="360" height="28" rx="4" fill="#dfd6ed" opacity="0.6" />
+                <rect x="150" y="90" width="220" height="150" rx="16" fill="#ffffff" stroke="#e1d7f0" strokeWidth="4" />
+                <rect x="160" y="100" width="200" height="110" rx="8" fill="#fcfaff" />
+                <path d="M240,240 L220,310 L280,310 L260,240 Z" fill="#dfd6ed" />
+                <rect x="170" y="110" width="50" height="40" rx="6" fill="#f0e6ff" />
+                <rect x="230" y="110" width="120" height="8" rx="4" fill="#7e42eb" />
+                <rect x="230" y="125" width="80" height="6" rx="3" fill="#e04a9e" />
+                <rect x="230" y="137" width="100" height="4" rx="2" fill="#b5e6ff" />
+                <rect x="170" y="160" width="180" height="40" rx="8" fill="#ffffff" stroke="#f0e6ff" strokeWidth="2" />
+                <path d="M180,185 Q210,165 240,180 T300,170 T340,185" fill="none" stroke="#7e42eb" strokeWidth="3" strokeLinecap="round" />
+                <circle cx="240" cy="180" r="4" fill="#e04a9e" />
+                <circle cx="300" cy="170" r="4" fill="#0096c7" />
+                <rect x="200" y="295" width="100" height="6" rx="3" fill="#dfd6ed" />
+                <rect x="315" y="295" width="16" height="6" rx="3" fill="#dfd6ed" />
+                <g transform="translate(90, 110)">
+                  <rect width="55" height="55" rx="14" fill="#ffffff" stroke="#f0e6ff" strokeWidth="2" />
+                  <path d="M27,12 L30,19 L37,19 L32,24 L34,31 L27,27 L20,31 L22,24 L17,19 L24,19 Z" fill="#ffd700" />
+                  <circle cx="20" cy="42" r="3" fill="#7e42eb" />
+                  <circle cx="27" cy="42" r="3" fill="#e04a9e" />
+                  <circle cx="34" cy="42" r="3" fill="#0096c7" />
+                </g>
+                <g transform="translate(370, 70)">
+                  <rect width="50" height="50" rx="14" fill="#ffffff" stroke="#f0e6ff" strokeWidth="2" />
+                  <path d="M25,32 L23.5,30.5 C18.2,25.7 15,22.8 15,19.2 C15,16.2 17.2,14 20.2,14 C21.9,14 23.5,14.8 25,16.1 C26.5,14.8 28.1,14 29.8,14 C32.8,14 35,16.2 35,19.2 C35,22.8 31.8,25.7 26.5,30.5 Z" fill="#e04a9e" />
+                </g>
+                <defs>
+                  <linearGradient id="circleGrad1" x1="300" y1="20" x2="500" y2="220" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="#7e42eb" />
+                    <stop offset="100%" stopColor="#e04a9e" />
+                  </linearGradient>
+                  <linearGradient id="circleGrad2" x1="200" y1="160" x2="360" y2="320" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="#0096c7" />
+                    <stop offset="100%" stopColor="#7e42eb" />
+                  </linearGradient>
+                </defs>
+              </svg>
             </div>
+          </div>
+        </div>
+      </section>
 
-            <div className="home-hero-actions mt-4">
-              <Link className="btn btn-primary btn-lg rounded-pill px-4" to="/customer/equipment">
-                Browse equipment
-                <FaArrowRight />
-              </Link>
-              <Link className="btn btn-outline-secondary btn-lg rounded-pill px-4" to="/customer/bookings">
-                View bookings
-              </Link>
-              <Link className="btn btn-outline-secondary btn-lg rounded-pill px-4" to="/customer/wishlist">
-                Wishlist
-              </Link>
+      {/* Statistics Cards Row */}
+      <section className="home-stats-row">
+        <div className="row g-4">
+          <div className="col-12 col-sm-6 col-xl-3">
+            <div className="stats-card p-4 h-100">
+              <div className="stats-card-header d-flex justify-content-between align-items-start">
+                <div className="stats-icon-wrap is-bookings">
+                  <FaHouse />
+                </div>
+                <span className="stats-trend text-success">+2 this month</span>
+              </div>
+              <div className="stats-card-body mt-3">
+                <span className="stats-label">Total Bookings</span>
+                <h3 className="stats-value mt-1">
+                  {loading ? "..." : (summary?.totalBookings ?? bookings.length)}
+                </h3>
+              </div>
             </div>
           </div>
 
-          <div className="col-12 col-xl-5">
-            <div className="home-hero-panel h-100">
-              <div className="home-summary-grid">
-                {heroStats.map((item) => (
-                  <div className="home-summary-card" key={item.title}>
-                    <div className="home-summary-icon">{item.icon}</div>
-                    <div className="home-card-meta">{item.title}</div>
-                    <div className="home-summary-value">{item.value}</div>
-                    <div className="home-card-meta">{item.note}</div>
-                  </div>
-                ))}
+          <div className="col-12 col-sm-6 col-xl-3">
+            <div className="stats-card p-4 h-100">
+              <div className="stats-card-header d-flex justify-content-between align-items-start">
+                <div className="stats-icon-wrap is-active">
+                  <FaCalendarDay />
+                </div>
+                <span className="stats-trend text-primary">Currently ongoing</span>
               </div>
+              <div className="stats-card-body mt-3">
+                <span className="stats-label">Active Bookings</span>
+                <h3 className="stats-value mt-1">
+                  {loading ? "..." : (summary?.activeBookings ?? activeBookings.length)}
+                </h3>
+              </div>
+            </div>
+          </div>
 
-              <div className="home-hero-stack mt-4">
-                <div className="home-hero-stack-row">
-                  <span>Pickup reminders</span>
-                  <strong>{pickupReminders.length}</strong>
+          <div className="col-12 col-sm-6 col-xl-3">
+            <div className="stats-card p-4 h-100">
+              <div className="stats-card-header d-flex justify-content-between align-items-start">
+                <div className="stats-icon-wrap is-spent">
+                  <FaWallet />
                 </div>
-                <div className="home-hero-stack-row">
-                  <span>Return reminders</span>
-                  <strong>{returnReminders.length}</strong>
+                <span className="stats-trend text-success">+₹12,400 this month</span>
+              </div>
+              <div className="stats-card-body mt-3">
+                <span className="stats-label">Total Spent</span>
+                <h3 className="stats-value mt-1">
+                  {loading ? "..." : formatCurrency(summary?.totalSpent ?? 0)}
+                </h3>
+              </div>
+            </div>
+          </div>
+
+          <div className="col-12 col-sm-6 col-xl-3">
+            <div className="stats-card p-4 h-100">
+              <div className="stats-card-header d-flex justify-content-between align-items-start">
+                <div className="stats-icon-wrap is-wishlist">
+                  <FaHeart />
                 </div>
-                <div className="home-hero-stack-row">
-                  <span>Unread notifications</span>
-                  <strong>{latestNotifications.filter((item) => !item.isRead).length}</strong>
-                </div>
+                <span className="stats-trend text-purple">+3 new items</span>
+              </div>
+              <div className="stats-card-body mt-3">
+                <span className="stats-label">Wishlist Items</span>
+                <h3 className="stats-value mt-1">
+                  {loading ? "..." : (summary?.wishlistCount ?? 0)}
+                </h3>
               </div>
             </div>
           </div>
         </div>
-
-        {error ? <div className="alert alert-danger mt-4 mb-0">{error}</div> : null}
       </section>
 
+      {/* Trending Equipment Section */}
       <section className="py-2">
-        <div className="d-flex align-items-end justify-content-between gap-3 mb-3 flex-wrap">
-          <div>
-            <p className="eyebrow mb-2">Trending equipment</p>
-            <h2 className="home-section-title">Most engaged rentals</h2>
+        <div className="d-flex align-items-center justify-content-between mb-4">
+          <div className="d-flex align-items-center gap-3">
+            <div className="section-title-icon-wrap">
+              <FaChartSimple />
+            </div>
+            <div>
+              <h2 className="home-section-title mb-1">Trending Equipment</h2>
+              <p className="home-section-subtitle mb-0">Most popular equipment among customers</p>
+            </div>
           </div>
-          <Link className="btn btn-outline-secondary rounded-pill" to="/customer/equipment">
-            View all
-            <FaArrowRight />
+          <Link className="view-all-link" to="/customer/equipment">
+            View all <FaArrowRight className="ms-1 fs-6" />
           </Link>
         </div>
         {renderRail(
           trendingEquipments,
           {
-            title: "No trending equipment yet",
-            copy: "Trending rentals will appear once owner listings gather activity.",
+            title: "No trending equipment available",
+            copy: "Check back later for trending marketplace items.",
           },
         )}
       </section>
 
+      {/* Most Engaged Rentals Section */}
       <section className="py-2">
-        <div className="d-flex align-items-end justify-content-between gap-3 mb-3 flex-wrap">
-          <div>
-            <p className="eyebrow mb-2">Recently added</p>
-            <h2 className="home-section-title">Fresh inventory from owners</h2>
+        <div className="d-flex align-items-center justify-content-between mb-4">
+          <div className="d-flex align-items-center gap-3">
+            <div className="section-title-icon-wrap is-engaged">
+              <FaStar />
+            </div>
+            <div>
+              <h2 className="home-section-title mb-1">Most Engaged Rentals</h2>
+              <p className="home-section-subtitle mb-0">Highly rated and frequently rented items</p>
+            </div>
           </div>
-          <Link className="btn btn-outline-secondary rounded-pill" to="/customer/equipment">
-            View all equipment
-            <FaArrowRight />
+          <Link className="view-all-link" to="/customer/equipment">
+            View all <FaArrowRight className="ms-1 fs-6" />
           </Link>
         </div>
         {renderRail(
-          recentlyAdded,
+          featuredEquipments,
           {
-            title: "No recent listings",
-            copy: "New inventory will show up here as owners add approved equipment.",
+            title: "No engaged rentals available",
+            copy: "Check back later for active marketplace recommendations.",
           },
         )}
       </section>
 
-      <section className="py-2">
-        <div className="row g-4">
-          <div className="col-12 col-xl-7">
-            <div className="d-flex align-items-end justify-content-between gap-3 mb-3 flex-wrap">
-              <div>
-                <p className="eyebrow mb-2">Featured equipment</p>
-                <h2 className="home-section-title">Top-rated rentals to consider</h2>
-              </div>
-              <Link className="btn btn-outline-secondary rounded-pill" to="/customer/equipment">
-                Browse featured
-                <FaArrowRight />
-              </Link>
-            </div>
-
-            <div className="row g-4">
-              {loading
-                ? Array.from({ length: 4 }).map((_, index) => (
-                    <div className="col-12 col-md-6" key={index}>
-                      <div className="home-placeholder-card placeholder-glow">
-                        <div className="placeholder rounded-top-4 w-100" style={{ aspectRatio: "16 / 11" }} />
-                        <div className="p-3">
-                          <div className="placeholder col-8 mb-2" />
-                          <div className="placeholder col-5 mb-3" />
-                          <div className="placeholder col-12 mb-2" />
-                          <div className="placeholder col-10" />
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                : featuredEquipments.length > 0
-                ? featuredEquipments.map((equipment) => (
-                    <EquipmentCard
-                      key={equipment._id || equipment.id}
-                      equipment={equipment}
-                      detailsUrl={`/customer/equipment/${equipment._id || equipment.id}`}
-                      bookUrl={`/customer/equipment/${equipment._id || equipment.id}?book=1`}
-                    />
-                  ))
-                : (
-                  <div className="col-12">
-                    <div className="customer-surface p-4 text-center">
-                      <FaCircleExclamation className="fs-1 text-muted mb-3" />
-                      <h3 className="home-card-title mb-2">No featured equipment yet</h3>
-                      <p className="home-card-meta mb-0">
-                        Featured rentals will surface once the marketplace has more activity.
-                      </p>
-                    </div>
-                  </div>
-                )}
-            </div>
-          </div>
-
-          <div className="col-12 col-xl-5">
-            <div className="home-side-panel p-4 h-100">
-              <p className="eyebrow mb-2">Recommended for you</p>
-              <h2 className="home-section-title mb-4">A tighter fit for your current activity</h2>
-              {renderRail(
-                recommendedEquipments,
-                {
-                  title: "No recommendations yet",
-                  copy: "Recommendations will appear once the catalog has enough live inventory.",
-                },
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-2">
-        <div className="d-flex align-items-end justify-content-between gap-3 mb-3 flex-wrap">
-          <div>
-            <p className="eyebrow mb-2">Latest reviews</p>
-            <h2 className="home-section-title">Recent customer feedback</h2>
-          </div>
-          <Link className="btn btn-outline-secondary rounded-pill" to="/customer/equipment">
-            Open catalog
-            <FaArrowRight />
-          </Link>
-        </div>
-
-        {loading ? (
-          <div className="row g-4">
-            {Array.from({ length: 4 }).map((_, index) => (
-              <div className="col-12 col-lg-6" key={index}>
-                <div className="home-review-card placeholder-glow p-4">
-                  <div className="placeholder col-5 mb-3" />
-                  <div className="placeholder col-12 mb-2" />
-                  <div className="placeholder col-10 mb-2" />
-                  <div className="placeholder col-7" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : reviews.length > 0 ? (
-          <div className="row g-4">
-            {reviews.map((review) => (
-              <div className="col-12 col-lg-6" key={review._id}>
-                <div className="home-review-card p-4 h-100">
-                  <div className="d-flex align-items-start justify-content-between gap-3 mb-3">
-                    <div>
-                      <div className="home-review-name">{review.customer?.name || "Customer"}</div>
-                      <div className="home-card-meta">{review.equipment?.name || "Equipment"}</div>
-                    </div>
-                    <div className="home-rating-pill">
-                      <FaStar />
-                      <span>{Number(review.rating || 0).toFixed(1)}</span>
-                    </div>
-                  </div>
-                  <p className="home-review-copy mb-3">{review.review || "No review text provided."}</p>
-                  <div className="d-flex align-items-center justify-content-between gap-2 flex-wrap">
-                    <span className="home-card-meta">{formatDate(review.createdAt)}</span>
-                    {review.ownerReply?.trim() ? (
-                      <span className="badge bg-success-subtle text-success">Owner replied</span>
-                    ) : (
-                      <span className="badge bg-light text-dark">Latest feedback</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="customer-surface p-4 text-center">
-            <FaCircleExclamation className="fs-1 text-muted mb-3" />
-            <h3 className="home-card-title mb-2">No reviews yet</h3>
-            <p className="home-card-meta mb-0">Reviews will appear here after customers complete rentals and submit feedback.</p>
-          </div>
-        )}
-      </section>
-
+      {/* Recent Activity / Bookings & Return Reminders */}
       <section className="py-2">
         <div className="row g-4">
           <div className="col-12 col-xl-6">
             <div className="home-list-card p-4 h-100">
-              <div className="d-flex align-items-end justify-content-between gap-3 mb-4 flex-wrap">
+              <div className="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
                 <div>
-                  <p className="eyebrow mb-2">Active bookings</p>
-                  <h2 className="home-section-title">Your current rentals</h2>
+                  <h2 className="home-section-title mb-1">Active Bookings</h2>
+                  <p className="home-section-subtitle mb-0">Your current ongoing rentals</p>
                 </div>
-                <Link className="btn btn-outline-secondary rounded-pill" to="/customer/bookings">
-                  See all bookings
-                  <FaArrowRight />
+                <Link className="view-all-link" to="/customer/bookings">
+                  See all bookings <FaArrowRight className="ms-1 fs-6" />
                 </Link>
               </div>
 
               {loading ? (
                 <div className="placeholder-glow">
-                  {Array.from({ length: 4 }).map((_, index) => (
+                  {Array.from({ length: 3 }).map((_, index) => (
                     <div className="mb-3" key={index}>
                       <div className="placeholder col-12 mb-2" />
                       <div className="placeholder col-8" />
@@ -624,18 +393,18 @@ function Home() {
                 </div>
               ) : activeBookings.length > 0 ? (
                 <div className="list-group">
-                  {activeBookings.slice(0, 4).map((booking) => (
-                    <div key={booking._id} className="list-group-item list-group-item-action mb-3">
+                  {activeBookings.slice(0, 3).map((booking) => (
+                    <div key={booking._id} className="list-group-item p-3 border-0">
                       <div className="d-flex align-items-start gap-3 flex-wrap">
                         <div className="flex-grow-1 min-w-0">
-                          <strong>{booking.equipment?.name || "Equipment"}</strong>
-                          <div className="home-card-meta">
+                          <strong className="d-block text-truncate text-dark">{booking.equipment?.name || "Equipment"}</strong>
+                          <div className="home-section-subtitle mt-1">
                             {booking.equipment?.category || "Category"} · {formatDate(booking.startDate)} - {formatDate(booking.endDate)}
                           </div>
                         </div>
                         <div className="text-end">
-                          <div className="badge bg-success-subtle text-success">{booking.status}</div>
-                          <div className="home-card-meta mt-2">{formatCurrency(booking.totalAmount)}</div>
+                          <span className="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill">{booking.status}</span>
+                          <div className="fw-bold text-dark mt-2">{formatCurrency(booking.totalAmount)}</div>
                         </div>
                       </div>
                     </div>
@@ -644,8 +413,8 @@ function Home() {
               ) : (
                 <div className="text-center py-5">
                   <FaCircleExclamation className="fs-1 text-muted mb-3" />
-                  <h3 className="home-card-title mb-2">No active bookings</h3>
-                  <p className="home-card-meta mb-0">Start a rental from the equipment catalog.</p>
+                  <h4 className="home-section-title mb-2">No active bookings</h4>
+                  <p className="home-section-subtitle mb-0">Rent equipment from the catalog to see details here.</p>
                 </div>
               )}
             </div>
@@ -653,10 +422,10 @@ function Home() {
 
           <div className="col-12 col-xl-6">
             <div className="home-list-card p-4 h-100">
-              <div className="d-flex align-items-end justify-content-between gap-3 mb-4 flex-wrap">
+              <div className="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
                 <div>
-                  <p className="eyebrow mb-2">Upcoming returns</p>
-                  <h2 className="home-section-title">Return reminders</h2>
+                  <h2 className="home-section-title mb-1">Upcoming Returns</h2>
+                  <p className="home-section-subtitle mb-0">Due dates for pickup rentals</p>
                 </div>
               </div>
 
@@ -672,14 +441,14 @@ function Home() {
               ) : upcomingReturns.length > 0 ? (
                 <div className="list-group">
                   {upcomingReturns.map((booking) => (
-                    <div key={booking._id} className="list-group-item list-group-item-action mb-3">
+                    <div key={booking._id} className="list-group-item p-3 border-0">
                       <div className="d-flex align-items-start gap-3 flex-wrap">
                         <div className="flex-grow-1 min-w-0">
-                          <strong>{booking.equipment?.name || "Equipment"}</strong>
-                          <div className="home-card-meta">Return by {formatDate(booking.returnDate)}</div>
+                          <strong className="d-block text-truncate text-dark">{booking.equipment?.name || "Equipment"}</strong>
+                          <div className="home-section-subtitle mt-1">Return by {formatDate(booking.returnDate)}</div>
                         </div>
                         <div className="text-end">
-                          <div className="badge bg-info-subtle text-info">Due soon</div>
+                          <span className="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1 rounded-pill">Due soon</span>
                         </div>
                       </div>
                     </div>
@@ -688,8 +457,8 @@ function Home() {
               ) : (
                 <div className="text-center py-5">
                   <FaClock className="fs-1 text-muted mb-3" />
-                  <h3 className="home-card-title mb-2">No upcoming returns</h3>
-                  <p className="home-card-meta mb-0">Your current rentals do not have return dates soon.</p>
+                  <h4 className="home-section-title mb-2">No upcoming returns</h4>
+                  <p className="home-section-subtitle mb-0">No active pickup rentals are currently due.</p>
                 </div>
               )}
             </div>
@@ -697,21 +466,26 @@ function Home() {
         </div>
       </section>
 
-      <section className="py-2">
-        <div className="d-flex align-items-end justify-content-between gap-3 mb-3 flex-wrap">
-          <div>
-            <p className="eyebrow mb-2">Recent notifications</p>
-            <h2 className="home-section-title">What’s new in your account</h2>
+      {/* Recent Notifications / Updates */}
+      <section className="py-2 mb-4">
+        <div className="d-flex align-items-center justify-content-between mb-4">
+          <div className="d-flex align-items-center gap-3">
+            <div className="section-title-icon-wrap">
+              <FaClock />
+            </div>
+            <div>
+              <h2 className="home-section-title mb-1">Recent Activity</h2>
+              <p className="home-section-subtitle mb-0">Latest account updates and system logs</p>
+            </div>
           </div>
-          <Link className="btn btn-outline-secondary rounded-pill" to="/customer/notifications">
-            View all notifications
-            <FaArrowRight />
+          <Link className="view-all-link" to="/customer/notifications">
+            View all notifications <FaArrowRight className="ms-1 fs-6" />
           </Link>
         </div>
 
         {loading ? (
           <div className="row g-4">
-            {Array.from({ length: 4 }).map((_, index) => (
+            {Array.from({ length: 2 }).map((_, index) => (
               <div className="col-12 col-md-6" key={index}>
                 <div className="home-review-card placeholder-glow p-4">
                   <div className="placeholder col-6 mb-2" />
@@ -725,42 +499,25 @@ function Home() {
             {latestNotifications.map((notification) => (
               <div className="col-12 col-md-6" key={notification._id || notification.id}>
                 <div className="home-review-card p-4 h-100">
-                  <div className="d-flex align-items-center justify-content-between mb-3">
-                    <strong>{notification.title || "Notification"}</strong>
-                    <span className="text-muted small">{formatDate(notification.createdAt)}</span>
+                  <div className="d-flex align-items-center justify-content-between mb-2">
+                    <strong className="text-dark">{notification.title || "Update"}</strong>
+                    <span className="home-section-subtitle small">{formatDate(notification.createdAt)}</span>
                   </div>
-                  <p className="home-card-meta mb-0">{notification.message}</p>
+                  <p className="home-section-subtitle mb-0 text-truncate-2">{notification.message}</p>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="customer-surface p-4 text-center">
+          <div className="customer-surface p-4 text-center rounded-4 border">
             <FaCircleExclamation className="fs-1 text-muted mb-3" />
-            <h3 className="home-card-title mb-2">No notifications yet</h3>
-            <p className="home-card-meta mb-0">Notifications appear when bookings or equipment statuses change.</p>
+            <h3 className="home-card-title mb-2">No activity logs yet</h3>
+            <p className="home-card-meta mb-0">Logs appear as you place orders and update statuses.</p>
           </div>
         )}
-      </section>
-
-      <section className="py-2 pb-4">
-        <div className="row g-3">
-          {summaryTiles.map((tile) => (
-            <div className="col-12 col-md-4" key={tile.title}>
-              <div className="home-summary-strip p-4 h-100 d-flex align-items-center justify-content-between gap-3">
-                <div>
-                  <div className="home-card-meta mb-1">{tile.title}</div>
-                  <div className="home-summary-value">{tile.value}</div>
-                </div>
-                <div className="home-summary-icon">{tile.icon}</div>
-              </div>
-            </div>
-          ))}
-        </div>
       </section>
     </div>
   );
 }
 
 export default Home;
-

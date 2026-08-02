@@ -231,37 +231,27 @@ function Reviews() {
 
   return (
     <div className="reviews-page">
-      <div className="reviews-hero card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
-        <div className="card-body p-4 p-lg-5">
-          <div className="d-flex flex-column flex-xl-row justify-content-between align-items-start gap-4">
-            <div className="flex-grow-1">
-              <div className="d-flex align-items-center gap-3 mb-3">
-                <BackButton label="Back" />
-                <div>
-                  <p className="text-uppercase small fw-semibold text-primary mb-2">Owner workspace</p>
-                  <h2 className="fw-bold mb-2">Reviews</h2>
-                </div>
-              </div>
-              <p className="text-secondary mb-0">
-                Track customer feedback, reply to open reviews, and keep your equipment reputation in shape.
-              </p>
+      <div className="owner-page-header d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2 mb-4">
+        <div>
+          <p className="owner-page-eyebrow mb-1">Owner Workspace</p>
+          <h1 className="owner-page-title mb-1">Reviews</h1>
+          <p className="owner-page-subtitle mb-0">
+            Track customer feedback, reply to open reviews, and keep your equipment reputation in shape.
+          </p>
+        </div>
+        <div className="d-flex flex-wrap gap-3">
+          <div className="review-hero-pill">
+            <FaCommentDots />
+            <div>
+              <span>Total reviews</span>
+              <strong>{stats.totalReviews}</strong>
             </div>
-
-            <div className="d-flex flex-wrap gap-3 w-100 w-xl-auto">
-              <div className="review-hero-pill">
-                <FaCommentDots />
-                <div>
-                  <span>Total reviews</span>
-                  <strong>{stats.totalReviews}</strong>
-                </div>
-              </div>
-              <div className="review-hero-pill">
-                <FaStar />
-                <div>
-                  <span>Average rating</span>
-                  <strong>{stats.averageRating ? stats.averageRating.toFixed(1) : "0.0"}/5</strong>
-                </div>
-              </div>
+          </div>
+          <div className="review-hero-pill">
+            <FaStar />
+            <div>
+              <span>Average rating</span>
+              <strong>{stats.averageRating ? stats.averageRating.toFixed(1) : "0.0"}/5</strong>
             </div>
           </div>
         </div>

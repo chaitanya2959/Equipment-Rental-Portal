@@ -31,6 +31,9 @@ import BookingSuccess from "../pages/Customer/BookingSuccess";
 import CustomerWishlist from "../pages/Customer/Wishlist";
 import CustomerProfile from "../pages/Customer/Profile";
 import CustomerNotifications from "../pages/Customer/Notifications";
+import CustomerReviews from "../pages/Customer/Reviews";
+import CustomerRentalStats from "../pages/Customer/RentalStats";
+import CustomerHelpSupport from "../pages/Customer/HelpSupport";
 import NotificationDetails from "../pages/shared/NotificationDetails";
 import ReviewDetails from "../pages/shared/ReviewDetails";
 import AdminDashboard from "../pages/Admin/Dashboard";
@@ -108,7 +111,10 @@ function AppRoutes() {
             <Route path="/customer/profile" element={<CustomerProfile />} />
             <Route path="/customer/notifications" element={<CustomerNotifications />} />
             <Route path="/customer/notifications/:id" element={<NotificationDetails />} />
+            <Route path="/customer/reviews" element={<CustomerReviews />} />
             <Route path="/customer/reviews/:reviewId" element={<ReviewDetails />} />
+            <Route path="/customer/rental-stats" element={<CustomerRentalStats />} />
+            <Route path="/customer/help" element={<CustomerHelpSupport />} />
           </Route>
         </Route>
         <Route element={<ProtectedRoute allowedRoles={[ROLES.ADMIN]} />}>

@@ -177,14 +177,11 @@ function Earnings() {
 
   return (
     <div className="container-xxl py-4">
-      <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
-        <div className="d-flex align-items-center gap-3">
-          <BackButton label="Back" />
-          <div>
-            <p className="text-uppercase small fw-semibold text-primary mb-2 mb-lg-1">Owner workspace</p>
-            <h2 className="fw-bold mb-0">Earnings Overview</h2>
-            <p className="text-muted mb-0">Track income, payment flow, and monthly revenue trends.</p>
-          </div>
+      <div className="owner-page-header d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2 mb-4">
+        <div>
+          <p className="owner-page-eyebrow mb-1">Owner Workspace</p>
+          <h1 className="owner-page-title mb-1">Earnings Overview</h1>
+          <p className="owner-page-subtitle mb-0">Track income, payment flow, and monthly revenue trends.</p>
         </div>
         <span className="badge bg-success-subtle text-success px-3 py-2">Recharts enabled</span>
       </div>

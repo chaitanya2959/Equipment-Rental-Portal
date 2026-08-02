@@ -42,13 +42,13 @@ const recalculateEquipmentRating = async (equipmentId) => {
 
 const createReview = async (req, res) => {
   try {
-    const { equipment, rating, review } = req.body;
+    const { equipment, booking, rating, review } = req.body;
     const numericRating = Number(rating);
 
-    if (!equipment || !rating || !review) {
+    if (!equipment || !booking || !rating || !review) {
       return res.status(400).json({
         success: false,
-        message: "Equipment, rating, and review are required",
+        message: "Equipment, booking, rating, and review are required",
       });
     }
 
@@ -69,6 +69,7 @@ const createReview = async (req, res) => {
 
     const customerId = req.user.id;
     const completedBooking = await Booking.findOne({
+      _id: booking,
       equipment,
       customer: customerId,
       status: "Completed",
@@ -82,23 +83,24 @@ const createReview = async (req, res) => {
     }
 
     const existingReview = await Review.findOne({
-      equipment,
+      booking,
       customer: customerId,
     });
 
-    let savedReview;
     if (existingReview) {
-      existingReview.rating = rating;
-      existingReview.review = review;
-      savedReview = await existingReview.save();
-    } else {
-      savedReview = await Review.create({
-        equipment,
-        customer: customerId,
-        rating: numericRating,
-        review,
+      return res.status(400).json({
+        success: false,
+        message: "You have already reviewed this booking",
       });
     }
+
+    const savedReview = await Review.create({
+      equipment,
+      customer: customerId,
+      booking,
+      rating: numericRating,
+      review,
+    });
 
     await recalculateEquipmentRating(equipment);
 
@@ -285,9 +287,31 @@ const deleteReview = async (req, res) => {
   }
 };
 
+const getMyReviews = async (req, res) => {
+  try {
+    const customerId = req.user.id;
+    const reviews = await Review.find({ customer: customerId })
+      .populate("equipment", "name brand images category location")
+      .populate("booking", "bookingNumber startDate endDate")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: reviews.length,
+      data: reviews,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   createReview,
   getEquipmentReviews,
   updateReview,
   deleteReview,
+  getMyReviews,
 };

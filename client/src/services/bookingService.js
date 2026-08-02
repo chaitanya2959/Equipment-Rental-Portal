@@ -30,3 +30,8 @@ export const updateBookingStatus = async (id, status, paymentMethod, paymentStat
   const response = await api.put(`/booking/${id}/status`, { status, paymentMethod, paymentStatus });
   return response?.data?.data;
 };
+
+export const getCustomerStats = async () => {
+  const response = await api.get("/booking/customer/stats");
+  return response?.data?.data;
+};

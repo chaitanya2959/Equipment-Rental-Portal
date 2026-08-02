@@ -45,14 +45,14 @@ function EquipmentCard({ equipment, detailsUrl, bookUrl, onAddToWishlist, varian
           <div className="min-w-0 flex-grow-1">
             <span className="equipment-card-badge mb-2">{equipment.category || equipment.brand || "Uncategorized"}</span>
             <h5 className="equipment-card-title mb-1">{equipment.name}</h5>
-            <p className="text-muted mb-0 text-truncate">
+            <p className="text-muted mb-0 text-truncate small">
               {equipment.brand || "Brand unavailable"} · {equipment.location || "Location unavailable"}
             </p>
           </div>
           <span className="equipment-price-badge">{formatCurrency(equipment.pricePerDay)}/day</span>
         </div>
 
-        <div className="equipment-card-meta">
+        <div className="equipment-card-meta mb-3">
           <div className="equipment-meta-row">
             <span>Brand</span>
             <strong>{equipment.brand || "Not specified"}</strong>
@@ -90,33 +90,38 @@ function EquipmentCard({ equipment, detailsUrl, bookUrl, onAddToWishlist, varian
           ) : null}
         </div>
 
-        <div className="mt-auto d-grid gap-2">
-          <Link className="btn btn-primary btn-sm rounded-pill" to={detailsUrl || `/customer/equipment/${equipment._id || equipment.id}`}>
+        <div className="mt-auto d-flex align-items-center gap-2 pt-2">
+          <Link
+            className="btn btn-primary btn-sm rounded-pill flex-grow-1"
+            to={detailsUrl || `/customer/equipment/${equipment._id || equipment.id}`}
+          >
             <FaEye /> View Details
           </Link>
-          <button
-            type="button"
-            className="btn btn-outline-primary btn-sm rounded-pill"
-            onClick={() => onAddToWishlist?.(equipment)}
-          >
-            <FaHeart /> Add to Wishlist
-          </button>
           <Link
-            className="btn btn-light btn-sm rounded-pill"
+            className="btn btn-outline-primary btn-sm rounded-pill flex-grow-1"
             to={bookUrl || detailsUrl || `/customer/equipment/${equipment._id || equipment.id}`}
           >
             Book Now
           </Link>
+          <button
+            type="button"
+            className="btn btn-outline-danger btn-sm rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0"
+            style={{ width: "36px", height: "36px", padding: 0 }}
+            onClick={() => onAddToWishlist?.(equipment)}
+            aria-label="Add to Wishlist"
+          >
+            <FaHeart />
+          </button>
         </div>
       </div>
     </div>
   );
 
-  if (compact) {
+  if (compact || variant === "css-grid") {
     return card;
   }
 
-  return <div className="col-12 col-md-6 col-xl-3">{card}</div>;
+  return <div className="col-12 col-md-6 col-lg-4 mb-4">{card}</div>;
 }
 
 const formatCurrency = (value) =>
@@ -127,4 +132,3 @@ const formatCurrency = (value) =>
   }).format(value || 0);
 
 export default EquipmentCard;
-

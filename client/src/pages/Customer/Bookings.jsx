@@ -8,8 +8,10 @@ import {
   FaEye,
   FaMagnifyingGlass,
   FaRegClock,
+  FaStar,
 } from "react-icons/fa6";
 import { cancelBooking, getMyBookings } from "../../services/bookingService";
+import { getMyReviews, createReview, updateReview } from "../../services/reviewService";
 
 const PAGE_SIZE = 6;
 
@@ -110,104 +112,6 @@ const getImageUrl = (equipment) => {
   return `${imageBaseUrl}/uploads/${image}`;
 };
 
-function BookingCard({ booking, onView, onCancel, cancelling }) {
-  const rentalState = getRentalState(booking);
-  return (
-    <div className="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
-      <img
-        alt={booking.equipment?.name || "Equipment"}
-        className="img-fluid w-100"
-        src={getImageUrl(booking.equipment)}
-        style={{ height: "220px", objectFit: "cover" }}
-        onError={(event) => {
-          event.currentTarget.src = placeholderImage;
-        }}
-      />
-      <div className="card-body p-4 d-flex flex-column">
-        <div className="d-flex justify-content-between align-items-start gap-2 mb-3">
-          <div>
-            <div className="text-muted small mb-1">{booking.bookingNumber || booking._id}</div>
-            <h5 className="fw-bold mb-1">{booking.equipment?.name || "Equipment"}</h5>
-            <div className="text-muted small">{booking.equipment?.brand || "Brand unavailable"}</div>
-          </div>
-          <span className={`badge ${statusClasses[booking.status] || "bg-light text-dark"}`}>{booking.status || "Pending"}</span>
-        </div>
-
-        <div className="row g-2 small mb-3">
-          <div className="col-6">
-            <div className="border rounded-3 p-2 h-100">
-              <div className="text-muted">Location</div>
-              <div className="fw-semibold text-truncate">{booking.equipment?.location || "—"}</div>
-            </div>
-          </div>
-          <div className="col-6">
-            <div className="border rounded-3 p-2 h-100">
-              <div className="text-muted">Payment</div>
-              <div className={`fw-semibold ${paymentClasses[booking.paymentStatus] ? "" : ""}`}>{booking.paymentStatus || "Pending"}</div>
-            </div>
-          </div>
-          <div className="col-6">
-            <div className="border rounded-3 p-2 h-100">
-              <div className="text-muted">Start</div>
-              <div className="fw-semibold">{formatDate(booking.startDate)}</div>
-            </div>
-          </div>
-          <div className="col-6">
-            <div className="border rounded-3 p-2 h-100">
-              <div className="text-muted">End</div>
-              <div className="fw-semibold">{formatDate(booking.endDate)}</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="border rounded-3 p-2 mb-3 bg-light">
-          <div className="text-muted small">Rental state</div>
-          <div className="fw-semibold text-capitalize">{rentalState.label}</div>
-          <div className="text-muted small">{rentalState.detail}</div>
-        </div>
-
-        <div className="row g-2 small mb-3">
-          <div className="col-4">
-            <div className="border rounded-3 p-2 h-100">
-              <div className="text-muted">Days</div>
-              <div className="fw-semibold">{booking.totalDays || 0}</div>
-            </div>
-          </div>
-          <div className="col-4">
-            <div className="border rounded-3 p-2 h-100">
-              <div className="text-muted">Deposit</div>
-              <div className="fw-semibold">{formatCurrency(booking.depositAmount)}</div>
-            </div>
-          </div>
-          <div className="col-4">
-            <div className="border rounded-3 p-2 h-100">
-              <div className="text-muted">Total</div>
-              <div className="fw-semibold">{formatCurrency(booking.totalAmount)}</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-auto d-flex gap-2">
-          <button className="btn btn-outline-primary btn-sm flex-fill" type="button" onClick={() => onView(booking)}>
-            <FaEye className="me-1" />
-            View Details
-          </button>
-          {["Pending", "Approved"].includes(booking.status) ? (
-            <button
-              className="btn btn-outline-danger btn-sm flex-fill"
-              type="button"
-              onClick={() => onCancel(booking)}
-              disabled={cancelling === booking._id}
-            >
-              <FaCircleXmark className="me-1" />
-              {cancelling === booking._id ? "Cancelling..." : "Cancel"}
-            </button>
-          ) : null}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function Bookings() {
   const [bookings, setBookings] = useState([]);
@@ -220,6 +124,14 @@ function Bookings() {
   const [cancelling, setCancelling] = useState(null);
   const [toast, setToast] = useState("");
 
+  const [reviews, setReviews] = useState([]);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewError, setReviewError] = useState("");
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewToEdit, setReviewToEdit] = useState(null);
+
   useEffect(() => {
     if (!toast) return undefined;
     const timer = setTimeout(() => setToast(""), 2500);
@@ -230,8 +142,12 @@ function Bookings() {
     try {
       setLoading(true);
       setError("");
-      const data = await getMyBookings();
-      setBookings(data);
+      const [bookingsData, reviewsData] = await Promise.all([
+        getMyBookings(),
+        getMyReviews()
+      ]);
+      setBookings(bookingsData);
+      setReviews(reviewsData);
     } catch (fetchError) {
       setError(fetchError?.response?.data?.message || "Unable to load your bookings.");
     } finally {
@@ -246,9 +162,13 @@ function Bookings() {
       try {
         setLoading(true);
         setError("");
-        const data = await getMyBookings();
+        const [bookingsData, reviewsData] = await Promise.all([
+          getMyBookings(),
+          getMyReviews()
+        ]);
         if (!active) return;
-        setBookings(data);
+        setBookings(bookingsData);
+        setReviews(reviewsData);
       } catch (fetchError) {
         if (!active) return;
         setError(fetchError?.response?.data?.message || "Unable to load your bookings.");
@@ -262,6 +182,54 @@ function Bookings() {
       active = false;
     };
   }, []);
+
+  const handleOpenReviewModal = (existingReview = null) => {
+    if (existingReview) {
+      setReviewToEdit(existingReview);
+      setReviewRating(existingReview.rating);
+      setReviewComment(existingReview.review);
+    } else {
+      setReviewToEdit(null);
+      setReviewRating(5);
+      setReviewComment("");
+    }
+    setReviewError("");
+    setReviewModalOpen(true);
+  };
+
+  const handleSaveReview = async (e) => {
+    e.preventDefault();
+    if (!reviewComment.trim()) {
+      setReviewError("Review comment is required.");
+      return;
+    }
+    try {
+      setSubmittingReview(true);
+      setReviewError("");
+      if (reviewToEdit) {
+        await updateReview(reviewToEdit._id, {
+          rating: reviewRating,
+          review: reviewComment,
+        });
+        setToast("Review updated successfully.");
+      } else {
+        await createReview({
+          equipment: selectedBooking.equipment._id,
+          booking: selectedBooking._id,
+          rating: reviewRating,
+          review: reviewComment,
+        });
+        setToast("Review submitted successfully.");
+      }
+      const updatedReviews = await getMyReviews();
+      setReviews(updatedReviews);
+      setReviewModalOpen(false);
+    } catch (err) {
+      setReviewError(err?.response?.data?.message || "Failed to save review.");
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
 
   const filteredBookings = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -353,21 +321,24 @@ function Bookings() {
     <div className="container-xxl py-4">
       {toast ? <div className="alert alert-success">{toast}</div> : null}
 
-      <div className="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
-        <div className="d-flex align-items-center gap-3">
-          <BackButton label="Back" />
-          <div>
-          <p className="text-uppercase small fw-semibold text-primary mb-2">Customer workspace</p>
-          <h2 className="fw-bold mb-1">My Bookings</h2>
-          <p className="text-muted mb-0">Track every booking, search live records, and cancel any eligible rental.</p>
+      <div className="bookings-header mb-4">
+        <div className="row align-items-center g-3">
+          <div className="col-12 col-lg-auto">
+            <BackButton label="Back" />
           </div>
-        </div>
-        <div className="d-flex flex-wrap gap-2">
-          <span className="badge bg-primary-subtle text-primary px-3 py-2">{bookings.length} total</span>
-          <span className="badge bg-success-subtle text-success px-3 py-2">
-            <FaCalendarDays className="me-1" />
-            Sort: {sortBy === "latest" ? "Latest First" : "Oldest First"}
-          </span>
+          <div className="col-12 col-lg">
+            <div className="bookings-title-block">
+              <p className="bookings-label text-uppercase small fw-semibold text-primary mb-2">Customer workspace</p>
+              <h2 className="bookings-title fw-bold mb-1">My Bookings</h2>
+              <p className="bookings-subtitle text-muted mb-0">Track and manage all your rentals</p>
+            </div>
+          </div>
+          <div className="col-12 col-lg-auto">
+            <span className="bookings-count-badge">
+              <FaCalendarDays className="me-1" />
+              {bookings.length} Total
+            </span>
+          </div>
         </div>
       </div>
 
@@ -462,89 +433,74 @@ function Bookings() {
         </div>
       ) : (
         <>
-          <div className="d-none d-md-block card border-0 shadow-sm rounded-4 overflow-hidden">
-            <div className="table-responsive">
-              <table className="table align-middle mb-0">
-                <thead className="table-light">
-                  <tr>
-                    <th>Booking</th>
-                    <th>Equipment</th>
-                    <th>Location</th>
-                    <th>Dates</th>
-                    <th>Countdown</th>
-                    <th>Days</th>
-                    <th>Amount</th>
-                    <th>Status</th>
-                    <th>Payment</th>
-                    <th>Created</th>
-                    <th className="text-end">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedBookings.map((booking) => (
-                    <tr key={booking._id}>
-                      <td>
-                        <div className="fw-semibold">{booking.bookingNumber || booking._id}</div>
-                        <div className="text-muted small">{booking.equipment?.brand || "—"}</div>
-                      </td>
-                      <td>
-                        <div className="fw-semibold">{booking.equipment?.name || "Equipment"}</div>
-                        <div className="text-muted small">{booking.equipment?.category || "—"}</div>
-                      </td>
-                      <td>{booking.equipment?.location || "—"}</td>
-                      <td>
-                        <div className="fw-semibold">{formatDate(booking.startDate)}</div>
-                        <div className="text-muted small">to {formatDate(booking.endDate)}</div>
-                      </td>
-                      <td>
-                        <span className={`badge bg-${booking.rentalState?.tone || "info"}-subtle text-${booking.rentalState?.tone || "info"}`}>
-                          {booking.rentalState?.label || "Pending"}
-                        </span>
-                        <div className="text-muted small mt-1">{booking.rentalState?.detail || "Awaiting schedule"}</div>
-                      </td>
-                      <td>{booking.totalDays || 0}</td>
-                      <td>{formatCurrency(booking.totalAmount)}</td>
-                      <td>
-                        <span className={`badge ${statusClasses[booking.status] || "bg-light text-dark"}`}>{booking.status || "Pending"}</span>
-                      </td>
-                      <td>
-                        <span className={`badge ${paymentClasses[booking.paymentStatus] || "bg-light text-dark"}`}>
-                          {booking.paymentStatus || "Pending"}
-                        </span>
-                      </td>
-                      <td>{formatDate(booking.createdAt)}</td>
-                      <td>
-                        <div className="d-flex justify-content-end gap-2">
-                          <button className="btn btn-outline-primary btn-sm" type="button" onClick={() => setSelectedBooking(booking)}>
-                            <FaEye className="me-1" />
-                            View
-                          </button>
-                          {["Pending", "Approved"].includes(booking.status) ? (
-                            <button
-                              className="btn btn-outline-danger btn-sm"
-                              type="button"
-                              onClick={() => handleCancel(booking)}
-                              disabled={cancelling === booking._id}
-                            >
-                              <FaCircleXmark className="me-1" />
-                              {cancelling === booking._id ? "Cancelling..." : "Cancel"}
-                            </button>
-                          ) : null}
+          <div className="bookings-list">
+            {paginatedBookings.map((booking) => {
+              const rentalState = getRentalState(booking);
+              return (
+                <div className="booking-card" key={booking._id}>
+                  <div className="booking-card-inner">
+                    <div className="booking-card-image">
+                      <img
+                        alt={booking.equipment?.name || "Equipment"}
+                        src={getImageUrl(booking.equipment)}
+                        onError={(e) => { e.currentTarget.src = placeholderImage; }}
+                      />
+                    </div>
+                    
+                    <div className="booking-card-body">
+                      <div className="booking-card-main">
+                        <div className="booking-card-info">
+                          <div className="booking-card-id">{booking.bookingNumber || booking._id}</div>
+                          <h5 className="booking-card-equipment">{booking.equipment?.name || "Equipment"}</h5>
+                          <div className="booking-card-brand">{booking.equipment?.brand || "Brand unavailable"} · {booking.equipment?.category || "—"}</div>
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                      </div>
 
-          <div className="d-md-none row g-4">
-            {paginatedBookings.map((booking) => (
-              <div className="col-12" key={booking._id}>
-                <BookingCard booking={booking} cancelling={cancelling} onCancel={handleCancel} onView={setSelectedBooking} />
-              </div>
-            ))}
+                      <div className="booking-card-details">
+                        <div className="booking-detail-item">
+                          <div className="booking-detail-label">Location</div>
+                          <div className="booking-detail-value">{booking.equipment?.location || "—"}</div>
+                        </div>
+                        <div className="booking-detail-item">
+                          <div className="booking-detail-label">Rental Period</div>
+                          <div className="booking-detail-value">
+                            {formatDate(booking.startDate)} → {formatDate(booking.endDate)}
+                          </div>
+                          <div className="booking-detail-sub">{booking.totalDays || 0} Days</div>
+                        </div>
+                        <div className="booking-detail-item">
+                          <div className="booking-detail-label">Amount</div>
+                          <div className="booking-detail-value booking-amount">{formatCurrency(booking.totalAmount)}</div>
+                        </div>
+                      </div>
+
+                      <div className="booking-card-footer">
+                        <div className="booking-badges">
+                          <span className={`booking-badge booking-badge-${booking.status?.toLowerCase() || 'pending'}`}>
+                            {booking.status || "Pending"}
+                          </span>
+                          <span className={`booking-badge booking-badge-${booking.paymentStatus?.toLowerCase() || 'pending'}`}>
+                            {booking.paymentStatus || "Pending"}
+                          </span>
+                          <span className={`booking-badge booking-badge-${rentalState.tone}`}>
+                            {rentalState.label}
+                            <small>{rentalState.detail}</small>
+                          </span>
+                        </div>
+                        <button 
+                          className="btn btn-outline-primary btn-sm booking-view-btn"
+                          type="button" 
+                          onClick={() => setSelectedBooking(booking)}
+                        >
+                          <FaEye className="me-1" />
+                          View
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mt-4">
@@ -691,7 +647,87 @@ function Bookings() {
                     {cancelling === selectedBooking._id ? "Cancelling..." : "Cancel Booking"}
                   </button>
                 ) : null}
+                {selectedBooking.status === "Completed" && (
+                  <>
+                    {reviews.find(r => r.booking?._id === selectedBooking._id || r.booking === selectedBooking._id) ? (
+                      <button
+                        className="btn btn-outline-primary"
+                        type="button"
+                        onClick={() => {
+                          const existingReview = reviews.find(r => r.booking?._id === selectedBooking._id || r.booking === selectedBooking._id);
+                          handleOpenReviewModal(existingReview);
+                        }}
+                      >
+                        Edit Review
+                      </button>
+                    ) : (
+                      <button
+                        className="btn btn-primary"
+                        type="button"
+                        onClick={() => handleOpenReviewModal()}
+                      >
+                        Write Review
+                      </button>
+                    )}
+                  </>
+                )}
               </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {reviewModalOpen ? (
+        <div className="modal fade show d-block" tabIndex="-1" role="dialog" style={{ backgroundColor: "rgba(15, 23, 42, 0.7)", zIndex: 1060 }}>
+          <div className="modal-dialog modal-dialog-centered" role="document">
+            <div className="modal-content rounded-4 border-0 shadow-lg">
+              <form onSubmit={handleSaveReview}>
+                <div className="modal-header">
+                  <h5 className="modal-title fw-bold">{reviewToEdit ? "Edit Review" : "Write a Review"}</h5>
+                  <button type="button" className="btn-close" onClick={() => setReviewModalOpen(false)} />
+                </div>
+                <div className="modal-body">
+                  {reviewError ? <div className="alert alert-danger">{reviewError}</div> : null}
+                  <div className="mb-4 text-center">
+                    <p className="text-muted small mb-2">How would you rate this equipment?</p>
+                    <div className="d-flex justify-content-center gap-2">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          className="btn p-1 border-0"
+                          style={{ background: "none" }}
+                          onClick={() => setReviewRating(star)}
+                        >
+                          <FaStar
+                            size={32}
+                            color={star <= reviewRating ? "#f59e0b" : "#cbd5e1"}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label fw-semibold">Your Review</label>
+                    <textarea
+                      className="form-control"
+                      rows="4"
+                      placeholder="Share your experience using this equipment..."
+                      value={reviewComment}
+                      onChange={(e) => setReviewComment(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-outline-secondary" onClick={() => setReviewModalOpen(false)}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-primary" disabled={submittingReview}>
+                    {submittingReview ? "Saving..." : "Submit Review"}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>

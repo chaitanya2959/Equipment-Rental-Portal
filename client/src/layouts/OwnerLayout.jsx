@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import Navbar from "../components/Owner/Navbar";
 import Sidebar from "../components/Owner/Sidebar";
+import "../components/Owner/owner-layout.css";
 
 function OwnerLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);

@@ -1,28 +1,30 @@
 :root {
-  --public-bg: #f5f8fc;
-  --public-surface: rgba(255, 255, 255, 0.9);
-  --public-surface-solid: #ffffff;
-  --public-border: #e5edf7;
-  --public-text: #0f172a;
-  --public-muted: #64748b;
-  --public-primary: #2563eb;
-  --public-primary-dark: #1d4ed8;
-  --public-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+  --public-bg: #faf7ff;
+  --public-surface: rgba(255, 255, 255, 0.75);
+  --public-surface-solid: rgba(255, 255, 255, 0.92);
+  --public-border: rgba(142, 88, 240, 0.16);
+  --public-text: #2f2546;
+  --public-muted: #7f7495;
+  --public-primary: #8e58f0;
+  --public-primary-dark: #7033d5;
+  --public-shadow: 0 16px 36px rgba(124, 58, 237, 0.08);
 }
 
 .public-shell {
   background:
-    radial-gradient(circle at top left, rgba(37, 99, 235, 0.12), transparent 26%),
-    radial-gradient(circle at top right, rgba(96, 165, 250, 0.12), transparent 30%),
-    var(--public-bg);
+    radial-gradient(circle at 12% 12%, rgba(255, 112, 187, 0.1), transparent 30%),
+    radial-gradient(circle at 88% 18%, rgba(0, 180, 216, 0.09), transparent 30%),
+    radial-gradient(circle at 75% 85%, rgba(255, 158, 59, 0.07), transparent 25%),
+    linear-gradient(135deg, #fdfbff 0%, #f7f2ff 50%, #faf6ff 100%);
   color: var(--public-text);
+  min-height: 100vh;
 }
 
 .public-navbar {
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(16px);
-  border-bottom: 1px solid rgba(229, 237, 247, 0.9);
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--public-border);
+  box-shadow: 0 10px 30px rgba(142, 88, 240, 0.05);
   min-height: 78px;
 }
 
@@ -40,9 +42,9 @@
 
 .public-brand-mark {
   align-items: center;
-  background: linear-gradient(135deg, var(--public-primary) 0%, #60a5fa 100%);
+  background: linear-gradient(135deg, var(--public-primary) 0%, #ff70bb 100%);
   border-radius: 1rem;
-  box-shadow: 0 14px 30px rgba(37, 99, 235, 0.18);
+  box-shadow: 0 10px 24px rgba(142, 88, 240, 0.2);
   color: #fff;
   display: inline-flex;
   flex: 0 0 2.7rem;
@@ -69,13 +71,13 @@
 }
 
 .public-nav-link {
-  color: #334155;
+  color: #4a3b6e;
   font-weight: 600;
 }
 
 .public-nav-link:hover,
 .public-nav-link.active {
-  color: var(--public-primary);
+  color: var(--public-primary-dark);
 }
 
 .public-nav-cta {
@@ -90,7 +92,7 @@
 }
 
 .public-hero::before {
-  background: radial-gradient(circle at top right, rgba(37, 99, 235, 0.18), transparent 28%);
+  background: radial-gradient(circle at top right, rgba(142, 88, 240, 0.12), transparent 28%);
   content: "";
   inset: 0;
   pointer-events: none;

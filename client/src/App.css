@@ -261,10 +261,10 @@
   min-height: 100vh;
 }
 .owner-sidebar {
-  background: linear-gradient(180deg, #0f172a 0%, #13213a 100%);
-  border-right: 1px solid rgba(255, 255, 255, .06);
+  background: #ffffff;
+  border-right: 1px solid rgba(142, 88, 240, 0.14);
   bottom: 0;
-  color: #d8e2f1;
+  color: #2f2546;
   left: 0;
   overflow: hidden;
   position: fixed;
@@ -291,7 +291,7 @@
 }
 .owner-brand-link {
   align-items: center;
-  color: #fff;
+  color: #2f2546;
   display: flex;
   gap: .8rem;
   min-width: 0;
@@ -332,7 +332,7 @@
   padding: 1rem .75rem;
 }
 .owner-nav-label {
-  color: #7e91af;
+  color: #7f7495;
   font-size: .68rem;
   font-weight: 700;
   letter-spacing: .1em;
@@ -353,14 +353,14 @@
 }
 .owner-nav-link svg { flex: 0 0 1rem; font-size: 1rem; width: 1rem; }
 .owner-nav-link:hover {
-  background: rgba(99, 179, 255, .12);
-  color: #fff;
+  background: rgba(142, 88, 240, .06);
+  color: #7033d5;
   transform: translateX(2px);
 }
 .owner-nav-link.active {
-  background: linear-gradient(135deg, rgba(45, 107, 255, .24) 0%, rgba(99, 179, 255, .12) 100%);
-  color: #fff;
-  box-shadow: inset 3px 0 0 #3d7dff;
+  background: linear-gradient(135deg, rgba(142, 88, 240, .12) 0%, rgba(142, 88, 240, .06) 100%);
+  color: #7033d5;
+  box-shadow: inset 3px 0 0 #8e58f0;
 }
 .notification-dot {
   background: #ffb84d;

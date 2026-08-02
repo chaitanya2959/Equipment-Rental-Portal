@@ -104,12 +104,12 @@ function Bookings() {
   };
 
   return (
-    <div className="container-fluid px-0">
-      <div className="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3 mb-4">
+    <div>
+      <div className="owner-page-header d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2 mb-4">
         <div>
-          <p className="text-uppercase small fw-semibold text-primary mb-2">Owner workspace</p>
-          <h2 className="fw-bold mb-1">Booking Requests</h2>
-          <p className="text-muted mb-0">Review customer requests, approve or reject them, and keep your rentals organized.</p>
+          <p className="owner-page-eyebrow mb-1">Owner Workspace</p>
+          <h1 className="owner-page-title mb-1">Bookings</h1>
+          <p className="owner-page-subtitle mb-0">Review customer requests, approve or reject them, and keep your rentals organized.</p>
         </div>
         <div className="badge bg-primary-subtle text-primary px-3 py-2">{bookings.length} requests</div>
       </div>

@@ -133,14 +133,11 @@ function Notifications() {
 
   return (
     <div className="container-xxl py-4">
-      <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
-        <div className="d-flex align-items-center gap-3">
-          <BackButton label="Back" />
-          <div>
-            <p className="text-uppercase small fw-semibold text-primary mb-2 mb-lg-1">Owner workspace</p>
-            <h2 className="fw-bold mb-0">Notifications</h2>
-            <p className="text-muted mb-0">Track booking requests, payments, equipment events, and review activity.</p>
-          </div>
+      <div className="owner-page-header d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2 mb-4">
+        <div>
+          <p className="owner-page-eyebrow mb-1">Owner Workspace</p>
+          <h1 className="owner-page-title mb-1">Notifications</h1>
+          <p className="owner-page-subtitle mb-0">Track booking requests, payments, equipment events, and review activity.</p>
         </div>
         <div className="d-flex align-items-center gap-2">
           {unreadCount > 0 ? (

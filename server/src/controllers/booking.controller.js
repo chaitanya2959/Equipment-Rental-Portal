@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Booking = require("../models/Booking");
 const Equipment = require("../models/Equipment");
 const Notification = require("../models/Notification");
@@ -346,6 +347,233 @@ const getAllBookings = async (req, res) => {
   }
 };
 
+const getCustomerStats = async (req, res) => {
+  try {
+    const customerId = req.user.id;
+
+    // Total bookings count
+    const totalBookings = await Booking.countDocuments({ customer: customerId });
+
+    // Status-based counts
+    const activeBookings = await Booking.countDocuments({
+      customer: customerId,
+      status: { $in: ["Approved", "PickedUp"] },
+    });
+
+    const upcomingBookings = await Booking.countDocuments({
+      customer: customerId,
+      status: "Pending",
+      startDate: { $gte: new Date() },
+    });
+
+    const completedBookings = await Booking.countDocuments({
+      customer: customerId,
+      status: "Completed",
+    });
+
+    const cancelledBookings = await Booking.countDocuments({
+      customer: customerId,
+      status: { $in: ["Cancelled", "Rejected"] },
+    });
+
+    const customerObjectId = new mongoose.Types.ObjectId(customerId);
+
+    // Total spending on paid bookings
+    const totalSpentResult = await Booking.aggregate([
+      { $match: { customer: customerObjectId, paymentStatus: "Paid" } },
+      { $group: { _id: null, total: { $sum: "$totalAmount" } } },
+    ]);
+    const totalSpent = totalSpentResult.length > 0 ? totalSpentResult[0].total : 0;
+
+    // Total rental days across all bookings
+    const totalDaysResult = await Booking.aggregate([
+      { $match: { customer: customerObjectId } },
+      { $group: { _id: null, totalDays: { $sum: "$totalDays" } } },
+    ]);
+    const totalRentalDays = totalDaysResult.length > 0 ? totalDaysResult[0].totalDays : 0;
+
+    // Total reviews given
+    const Review = require("../models/Review");
+    const totalReviewsGiven = await Review.countDocuments({ customer: customerId });
+
+    // Average rental value
+    const avgResult = await Booking.aggregate([
+      { $match: { customer: customerObjectId, status: "Completed" } },
+      { $group: { _id: null, avg: { $avg: "$totalAmount" } } },
+    ]);
+    const averageRentalValue = avgResult.length > 0 ? Math.round(avgResult[0].avg) : 0;
+
+    // Highest rental amount
+    const highestResult = await Booking.aggregate([
+      { $match: { customer: customerObjectId, paymentStatus: "Paid" } },
+      { $group: { _id: null, max: { $max: "$totalAmount" } } },
+    ]);
+    const highestRentalAmount = highestResult.length > 0 ? highestResult[0].max : 0;
+
+    // Total completed rental value
+    const completedValueResult = await Booking.aggregate([
+      { $match: { customer: customerObjectId, status: "Completed", paymentStatus: "Paid" } },
+      { $group: { _id: null, total: { $sum: "$totalAmount" } } },
+    ]);
+    const totalCompletedRentalValue = completedValueResult.length > 0 ? completedValueResult[0].total : 0;
+
+    // Most rented equipment
+    const mostRentedEquipment = await Booking.aggregate([
+      { $match: { customer: customerObjectId } },
+      { $group: { _id: "$equipment", count: { $sum: 1 }, totalSpent: { $sum: "$totalAmount" } } },
+      { $sort: { count: -1 } },
+      { $limit: 5 },
+      {
+        $lookup: {
+          from: "equipment",
+          localField: "_id",
+          foreignField: "_id",
+          as: "equipment",
+        },
+      },
+      { $unwind: { path: "$equipment", preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          equipmentId: "$_id",
+          name: "$equipment.name",
+          category: "$equipment.category",
+          images: "$equipment.images",
+          rentalCount: "$count",
+          totalSpent: 1,
+          _id: 0,
+        },
+      },
+    ]);
+
+    // Rental activity by month
+    const rentalActivity = await Booking.aggregate([
+      { $match: { customer: customerObjectId } },
+      {
+        $group: {
+          _id: {
+            year: { $year: "$createdAt" },
+            month: { $month: "$createdAt" },
+          },
+          count: { $sum: 1 },
+          totalAmount: { $sum: "$totalAmount" },
+        },
+      },
+      { $sort: { "_id.year": 1, "_id.month": 1 } },
+      {
+        $project: {
+          year: "$_id.year",
+          month: "$_id.month",
+          count: 1,
+          totalAmount: 1,
+          _id: 0,
+        },
+      },
+    ]);
+
+    // Booking status distribution
+    const statusDistribution = await Booking.aggregate([
+      { $match: { customer: customerObjectId } },
+      { $group: { _id: "$status", count: { $sum: 1 } } },
+      { $project: { status: "$_id", count: 1, _id: 0 } },
+    ]);
+
+    // Most rented category
+    const mostRentedCategoryResult = await Booking.aggregate([
+      { $match: { customer: customerObjectId } },
+      {
+        $lookup: {
+          from: "equipment",
+          localField: "equipment",
+          foreignField: "_id",
+          as: "equipment",
+        },
+      },
+      { $unwind: "$equipment" },
+      { $group: { _id: "$equipment.category", count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 1 },
+    ]);
+    const mostRentedCategory =
+      mostRentedCategoryResult.length > 0 ? mostRentedCategoryResult[0]._id : null;
+
+    // Average rental duration
+    const avgDurationResult = await Booking.aggregate([
+      { $match: { customer: customerObjectId } },
+      { $group: { _id: null, avgDays: { $avg: "$totalDays" } } },
+    ]);
+    const averageRentalDuration = avgDurationResult.length > 0 ? Math.round(avgDurationResult[0].avgDays * 10) / 10 : 0;
+
+    // Highest spending month
+    const highestSpendingMonthResult = await Booking.aggregate([
+      { $match: { customer: customerObjectId, paymentStatus: "Paid" } },
+      {
+        $group: {
+          _id: { year: { $year: "$createdAt" }, month: { $month: "$createdAt" } },
+          total: { $sum: "$totalAmount" },
+        },
+      },
+      { $sort: { total: -1 } },
+      { $limit: 1 },
+      {
+        $project: {
+          year: "$_id.year",
+          month: "$_id.month",
+          total: 1,
+          _id: 0,
+        },
+      },
+    ]);
+    const highestSpendingMonth =
+      highestSpendingMonthResult.length > 0 ? highestSpendingMonthResult[0] : null;
+
+    // Recent rentals (last 5)
+    const recentRentals = await Booking.find({ customer: customerId })
+      .populate("equipment", "name brand category images location")
+      .populate("owner", "name")
+      .sort({ createdAt: -1 })
+      .limit(5);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        overview: {
+          totalBookings,
+          activeBookings,
+          upcomingBookings,
+          completedBookings,
+          cancelledBookings,
+          totalSpent,
+          totalRentalDays,
+          totalReviewsGiven,
+        },
+        spending: {
+          totalSpent,
+          averageRentalValue,
+          highestRentalAmount,
+          totalCompletedRentalValue,
+        },
+        mostRentedEquipment,
+        rentalActivity,
+        statusDistribution,
+        insights: {
+          mostRentedCategory,
+          totalDays: totalRentalDays,
+          totalBookings,
+          completedBookings,
+          averageRentalDuration,
+          highestSpendingMonth,
+        },
+        recentRentals,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   createBooking,
   getMyBookings,
@@ -353,4 +581,5 @@ module.exports = {
   updateBookingStatus,
   getOwnerBookings,
   getAllBookings,
+  getCustomerStats,
 };

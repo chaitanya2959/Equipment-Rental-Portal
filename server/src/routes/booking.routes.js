@@ -10,8 +10,8 @@ const {
     getMyBookings,
     cancelBooking,
     updateBookingStatus,
-    getOwnerBookings
-
+    getOwnerBookings,
+    getCustomerStats
 } = require("../controllers/booking.controller");
 const {
     bookingValidation
@@ -35,5 +35,7 @@ router.get(
 router.delete("/:id", protect, cancelBooking);
 
 router.put("/:id/status", protect, updateBookingStatus);
+
+router.get("/customer/stats", protect, getCustomerStats);
 
 module.exports=router;

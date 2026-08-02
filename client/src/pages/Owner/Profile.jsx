@@ -328,21 +328,17 @@ function Profile() {
 
   return (
     <div className="owner-profile-page">
-      <div className="profile-hero card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
-        <div className="card-body p-4 p-lg-5">
-          <div className="d-flex flex-column flex-lg-row justify-content-between align-items-start gap-3">
-            <div>
-              <p className="text-uppercase small fw-semibold text-primary mb-2">Owner workspace</p>
-              <h2 className="fw-bold mb-2">Owner Profile</h2>
-              <p className="text-secondary mb-0">
-                Manage your identity, business branding, payment details, uploaded documents, and account security.
-              </p>
-            </div>
-            <div className="profile-hero-badge">
-              <FaUserShield />
-              <span>Secure business profile</span>
-            </div>
-          </div>
+      <div className="owner-page-header d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2 mb-4">
+        <div>
+          <p className="owner-page-eyebrow mb-1">Owner Workspace</p>
+          <h1 className="owner-page-title mb-1">Owner Profile</h1>
+          <p className="owner-page-subtitle mb-0">
+            Manage your identity, business branding, payment details, uploaded documents, and account security.
+          </p>
+        </div>
+        <div className="profile-hero-badge">
+          <FaUserShield />
+          <span>Secure business profile</span>
         </div>
       </div>
 

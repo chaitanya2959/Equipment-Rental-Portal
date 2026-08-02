@@ -160,10 +160,11 @@ function MyEquipment() {
 
   return (
     <>
-      <div className="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+      <div className="owner-page-header d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2 mb-4">
         <div>
-          <h2 className="fw-bold mb-1">My Equipment</h2>
-          <p className="text-muted mb-0">Manage your rental inventory with owner-only actions and live equipment data.</p>
+          <p className="owner-page-eyebrow mb-1">Owner Workspace</p>
+          <h1 className="owner-page-title mb-1">My Equipment</h1>
+          <p className="owner-page-subtitle mb-0">Manage your rental inventory with owner-only actions and live equipment data.</p>
         </div>
         <Link to="/owner/equipment/new" className="btn btn-primary">
           + Add Equipment
@@ -233,7 +234,7 @@ function MyEquipment() {
             </div>
 
             <div className="col-12 col-md-6 col-lg-2">
-              <button type="button" className="btn btn-dark w-100" onClick={() => setPage(1)}>
+              <button type="button" className="btn btn-primary w-100" onClick={() => setPage(1)}>
                 Apply Filters
               </button>
             </div>

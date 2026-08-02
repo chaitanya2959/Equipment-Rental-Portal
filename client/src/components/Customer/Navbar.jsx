@@ -177,47 +177,48 @@ function CustomerNavbar() {
             </Link>
           </div>
 
-          <div className="customer-navbar-search d-none d-lg-flex">
-            <SearchBar
-              className="customer-searchbar-compact"
-              placeholder="Search equipment, bookings, owners..."
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              onSubmit={handleSearchSubmit}
-            />
+            <div className="customer-navbar-search d-none d-lg-flex">
+              <SearchBar
+                className="customer-searchbar-compact"
+                placeholder="Search equipment, bookings, or owners"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                onSubmit={handleSearchSubmit}
+              />
 
-            <div className="customer-category-select">
-              <button
-                aria-expanded={categoryOpen}
-                className="btn customer-pill-button dropdown-toggle"
-                type="button"
-                onClick={() => setCategoryOpen((current) => !current)}
-              >
-                <span>{activeCategoryLabel}</span>
-              </button>
-              <div className={`dropdown-menu customer-category-menu ${categoryOpen ? "show" : ""}`}>
-                {CATEGORY_OPTIONS.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <button
-                      className={`dropdown-item customer-category-item ${category === item.value ? "active" : ""}`}
-                      key={item.value}
-                      type="button"
-                      onClick={() => {
-                        setCategory(item.value);
-                        setCategoryOpen(false);
-                      }}
-                    >
-                      <span className="customer-category-icon">
-                        <Icon />
-                      </span>
-                      <span>{item.label}</span>
-                    </button>
-                  );
-                })}
+              <div className="customer-category-select">
+                <button
+                  aria-expanded={categoryOpen}
+                  className="btn customer-pill-button dropdown-toggle"
+                  type="button"
+                  onClick={() => setCategoryOpen((current) => !current)}
+                >
+                  <span>All Categories</span>
+                  <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>▼</span>
+                </button>
+                <div className={`dropdown-menu customer-category-menu ${categoryOpen ? "show" : ""}`}>
+                  {CATEGORY_OPTIONS.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        className={`dropdown-item customer-category-item ${category === item.value ? "active" : ""}`}
+                        key={item.value}
+                        type="button"
+                        onClick={() => {
+                          setCategory(item.value);
+                          setCategoryOpen(false);
+                        }}
+                      >
+                        <span className="customer-category-icon">
+                          <Icon />
+                        </span>
+                        <span>{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
-          </div>
 
           <div className="customer-navbar-actions">
             <Link className="btn customer-icon-button d-none d-md-inline-flex" to="/customer/equipment" aria-label="Browse equipment">

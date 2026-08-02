@@ -6,10 +6,13 @@ const {
     createReview,
     getEquipmentReviews,
     updateReview,
-    deleteReview
+    deleteReview,
+    getMyReviews
 } = require("../controllers/review.controller");
 
 router.post("/", protect, createReview);
+
+router.get("/my-reviews", protect, getMyReviews);
 
 router.get("/:equipmentId", getEquipmentReviews);
 

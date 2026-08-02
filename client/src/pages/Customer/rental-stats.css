@@ -1,0 +1,308 @@
+/* Rental Stats Page Styles */
+
+.rental-stats-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+/* Stats Icon Wrap Color Variants */
+.stats-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+}
+
+.stats-icon-wrap.is-primary {
+  background: rgba(126, 66, 235, 0.1);
+  color: #7e42eb;
+}
+
+.stats-icon-wrap.is-info {
+  background: rgba(0, 180, 216, 0.1);
+  color: #00b4d8;
+}
+
+.stats-icon-wrap.is-warning {
+  background: rgba(255, 158, 59, 0.1);
+  color: #ff9e3b;
+}
+
+.stats-icon-wrap.is-success {
+  background: rgba(43, 197, 150, 0.1);
+  color: #2bc596;
+}
+
+.stats-icon-wrap.is-danger {
+  background: rgba(255, 112, 187, 0.1);
+  color: #ff70bb;
+}
+
+.stats-icon-wrap.is-secondary {
+  background: rgba(127, 116, 149, 0.1);
+  color: #7f7495;
+}
+
+.stats-icon-wrap.is-dark {
+  background: rgba(47, 37, 70, 0.1);
+  color: #2f2546;
+}
+
+/* Section Title Icon */
+.section-title-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(126, 66, 235, 0.1);
+  color: #7e42eb;
+  font-size: 1.05rem;
+  flex-shrink: 0;
+}
+
+/* Section Titles */
+.home-section-title {
+  color: #24143a;
+  font-weight: 800;
+  font-size: 1.35rem;
+}
+
+.home-section-subtitle {
+  color: #8c7baf;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.view-all-link {
+  color: #7e42eb;
+  font-weight: 700;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+}
+
+.view-all-link:hover {
+  color: #6221d6;
+}
+
+/* Rental Activity Chart */
+.rental-activity-chart {
+  width: 100%;
+  overflow-x: auto;
+  padding: 1rem 0;
+}
+
+.activity-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  min-height: 240px;
+  padding: 0 0.5rem;
+}
+
+.activity-bar-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1 1 0;
+  min-width: 60px;
+  height: 100%;
+}
+
+.activity-bar-value {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #2f2546;
+}
+
+.activity-bar-track {
+  flex: 1;
+  width: 100%;
+  max-width: 48px;
+  background: rgba(142, 88, 240, 0.06);
+  border-radius: 12px;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  min-height: 160px;
+}
+
+.activity-bar-fill {
+  width: 100%;
+  background: linear-gradient(180deg, #8e58f0 0%, #7033d5 100%);
+  border-radius: 12px 12px 0 0;
+  transition: height 0.4s ease;
+  min-height: 8px;
+  box-shadow: 0 4px 12px rgba(142, 88, 240, 0.2);
+}
+
+.activity-bar-fill:hover {
+  background: linear-gradient(180deg, #9d6df3 0%, #8040e6 100%);
+}
+
+.activity-bar-label {
+  font-size: 0.75rem;
+  color: #7f7495;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Status Distribution */
+.status-distribution {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.status-distribution-item {
+  width: 100%;
+}
+
+.status-bar-track {
+  width: 100%;
+  height: 10px;
+  background: rgba(142, 88, 240, 0.06);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.status-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+  min-width: 2px;
+}
+
+.status-bar-fill.is-warning {
+  background: linear-gradient(90deg, #ff9e3b, #ff7e0b);
+}
+
+.status-bar-fill.is-success {
+  background: linear-gradient(90deg, #2bc596, #1ea87d);
+}
+
+.status-bar-fill.is-info {
+  background: linear-gradient(90deg, #00b4d8, #0096c7);
+}
+
+.status-bar-fill.is-primary {
+  background: linear-gradient(90deg, #8e58f0, #7033d5);
+}
+
+.status-bar-fill.is-danger {
+  background: linear-gradient(90deg, #ff70bb, #ff4d8d);
+}
+
+.status-bar-fill.is-secondary {
+  background: linear-gradient(90deg, #9a8fb8, #7f7495);
+}
+
+/* Insights List */
+.insights-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.insight-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.85rem 1rem;
+  background: rgba(142, 88, 240, 0.04);
+  border: 1px solid rgba(142, 88, 240, 0.08);
+  border-radius: 12px;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+.insight-item:hover {
+  background: rgba(142, 88, 240, 0.08);
+  border-color: rgba(142, 88, 240, 0.16);
+}
+
+.insight-label {
+  font-size: 0.85rem;
+  color: #7f7495;
+  font-weight: 600;
+}
+
+.insight-value {
+  font-size: 0.95rem;
+  color: #2f2546;
+  font-weight: 800;
+  text-align: right;
+}
+
+/* Bookings Header (shared with Bookings page) */
+.bookings-header {
+  width: 100%;
+}
+
+.bookings-title-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.bookings-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.bookings-title {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #2f2546;
+  letter-spacing: -0.02em;
+}
+
+.bookings-subtitle {
+  font-size: 0.95rem;
+  color: #7f7495;
+}
+
+.bookings-count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(126, 66, 235, 0.08);
+  color: #7e42eb;
+  font-weight: 800;
+  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(142, 88, 240, 0.16);
+}
+
+/* Responsive */
+@media (max-width: 767.98px) {
+  .activity-bars {
+    min-height: 200px;
+  }
+
+  .activity-bar-track {
+    min-height: 120px;
+  }
+
+  .insight-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+  }
+
+  .insight-value {
+    text-align: left;
+  }
+}
